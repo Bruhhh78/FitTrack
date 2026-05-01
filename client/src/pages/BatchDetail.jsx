@@ -112,43 +112,43 @@ const BatchDetail = () => {
                 )}
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.4), transparent)' }} />
               </div>
-              
+
               <div style={{ padding: 24 }}>
                 <div style={{ textAlign: 'left', marginBottom: 24 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 16px' }}>
-                  {['Expert guidance', 'Daily tracking', 'Streak challenges', 'Diet plans', 'Exercise plans', 'Community'].map((f, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      <FiCheckCircle style={{ color: 'var(--accent)', flexShrink: 0 }} size={14} /> <span>{f}</span>
-                    </div>
-                  ))}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 16px' }}>
+                    {['Expert guidance', 'Daily tracking', 'Streak challenges', 'Diet plans', 'Exercise plans', 'Community'].map((f, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                        <FiCheckCircle style={{ color: 'var(--accent)', flexShrink: 0 }} size={14} /> <span>{f}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textDecoration: 'line-through', marginBottom: -4 }}>₹{batch.originalPrice}</div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent)' }}>₹{batch.offerPrice}</div>
-                </div>
-                
-                <div style={{ flex: 1 }}>
-                  {user?.role === 'admin' ? (
-                    <button className="btn btn-secondary btn-sm" style={{ width: '100%' }} onClick={() => navigate('/admin')}>
-                      Admin View
-                    </button>
-                  ) : batch.isEnrolled ? (
-                    <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={() => navigate(`/dashboard/${batch._id}`)}>
-                      Dashboard
-                    </button>
-                  ) : (
-                    <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={handleEnroll} disabled={paying}>
-                      {paying ? '...' : 'Enroll Now'}
-                    </button>
-                  )}
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textDecoration: 'line-through', marginBottom: -4 }}>₹{batch.originalPrice}</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent)' }}>₹{batch.offerPrice}</div>
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    {user?.role === 'admin' ? (
+                      <button className="btn btn-secondary btn-sm" style={{ width: '100%' }} onClick={() => navigate(`/admin/batch/${batch._id}`)}>
+                        Admin View
+                      </button>
+                    ) : batch.isEnrolled ? (
+                      <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={() => navigate(`/dashboard/${batch._id}`)}>
+                        Dashboard
+                      </button>
+                    ) : (
+                      <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={handleEnroll} disabled={paying}>
+                        {paying ? '...' : 'Enroll Now'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
         </div>
       </section>
     </div>

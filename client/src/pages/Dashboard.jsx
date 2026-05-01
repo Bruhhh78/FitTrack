@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { FiActivity, FiTarget, FiCalendar, FiCamera, FiEdit3, FiAward, FiArrowRight } from 'react-icons/fi';
+import { FiActivity, FiTarget, FiCalendar, FiCamera, FiEdit3, FiAward, FiArrowRight, FiPlayCircle } from 'react-icons/fi';
 import { GiMeal } from 'react-icons/gi';
 
 const getYouTubeID = (url) => {
@@ -109,6 +109,13 @@ const Dashboard = () => {
                   <div className="progress-bar-container">
                     <div className="progress-bar-fill" style={{ width: `${Math.min(100, (selectedEnrollment.currentDay / (selectedEnrollment.batchId?.duration || 1)) * 100)}%` }} />
                   </div>
+                  <button 
+                    className="btn btn-primary" 
+                    style={{ width: '100%', marginTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: '1.1rem', padding: '12px' }}
+                    onClick={() => navigate(`/learn/${selectedEnrollment.batchId._id}`)}
+                  >
+                    <FiPlayCircle size={24} /> Start Batch Session
+                  </button>
                 </div>
 
                 {/* Quick actions */}

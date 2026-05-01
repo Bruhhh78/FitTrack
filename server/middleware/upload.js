@@ -63,12 +63,17 @@ const uploadToMemory = multer({
 });
 
 // Upload to cloudinary from buffer
-const uploadToCloudinary = (buffer, folder, resourceType = 'image') => {
+const uploadToCloudinary = (buffer, folder, resourceType = 'image', originalName = '') => {
+  const publicId = originalName ? originalName.split('.')[0] : `file_${Date.now()}`;
+  
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: `fittrack/${folder}`,
         resource_type: resourceType,
+        public_id: publicId,
+        use_filename: true,
+        unique_filename: false,
         quality: 'auto',
       },
       (error, result) => {

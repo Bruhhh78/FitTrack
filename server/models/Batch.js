@@ -76,6 +76,24 @@ const batchSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    curriculum: [
+      {
+        title: { type: String, required: true },
+        order: { type: Number, default: 0 },
+        items: [
+          {
+            type: {
+              type: String,
+              enum: ['text', 'image', 'video', 'pdf'],
+              required: true,
+            },
+            title: { type: String, required: true },
+            content: { type: String }, // Text content or URL
+            order: { type: Number, default: 0 },
+          },
+        ],
+      },
+    ],
   },
   { timestamps: true }
 );

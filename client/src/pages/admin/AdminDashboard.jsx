@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { FiUsers, FiPackage, FiActivity, FiPlus, FiEdit2, FiTrash2, FiEye, FiImage, FiX } from 'react-icons/fi';
+import { FiUsers, FiPackage, FiActivity, FiPlus, FiEdit2, FiTrash2, FiEye, FiImage, FiX, FiBook, FiArrowLeft, FiEdit3 } from 'react-icons/fi';
+import CurriculumManager from '../../components/admin/CurriculumManager';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -12,13 +13,16 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
   const [selectedBatch, setSelectedBatch] = useState(null);
+  const [selectedBatchForCurriculum, setSelectedBatchForCurriculum] = useState(null);
   const [showBatchForm, setShowBatchForm] = useState(false);
   const [showChallengeForm, setShowChallengeForm] = useState(false);
-  const [batchForm, setBatchForm] = useState({ title: '', description: '', duration: '', durationType: 'days', originalPrice: '', offerPrice: '', maxParticipants: 50, features: '', guideLink: '', thumbnailUrl: '' });
+  const [batchForm, setBatchForm] = useState({ title: '', description: '', duration: '', durationType: 'days', originalPrice: '', offerPrice: '', maxParticipants: 50, features: '', guideLink: '', thumbnailUrl: '', curriculum: [] });
   const [challengeForm, setChallengeForm] = useState({ batchId: '', title: '', description: '', duration: '', startDay: '', endDay: '', instructions: '' });
   const [userImages, setUserImages] = useState(null);
   const [editingBatchId, setEditingBatchId] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const location = useLocation();
 
   useEffect(() => {
     Promise.all([
@@ -27,11 +31,25 @@ const AdminDashboard = () => {
       api.get('/admin/users'),
     ]).then(([s, b, u]) => {
       setStats(s.data.stats);
-      setBatches(b.data.batches);
+      const batchList = b.data.batches;
+      setBatches(batchList);
       setUsers(u.data.users);
       setLoading(false);
+
+      // Handle deep linking for curriculum
+      const params = new URLSearchParams(location.search);
+      const tabParam = params.get('tab');
+      const batchIdParam = params.get('batchId');
+
+      if (tabParam === 'curriculum') {
+        setTab('curriculum');
+        if (batchIdParam) {
+          const target = batchList.find(b => b._id === batchIdParam);
+          if (target) setSelectedBatchForCurriculum(target);
+        }
+      }
     }).catch(() => setLoading(false));
-  }, []);
+  }, [location.search]);
 
   const loadEnrollments = (batchId) => {
     setSelectedBatch(batchId);
@@ -51,7 +69,8 @@ const AdminDashboard = () => {
       maxParticipants: batch.maxParticipants,
       features: (batch.features || []).join('\n'),
       guideLink: batch.guideLink || '',
-      thumbnailUrl: batch.thumbnailUrl || ''
+      thumbnailUrl: batch.thumbnailUrl || '',
+      curriculum: batch.curriculum || []
     });
     setShowBatchForm(true);
   };
@@ -69,7 +88,7 @@ const AdminDashboard = () => {
       }
       setShowBatchForm(false);
       setEditingBatchId(null);
-      setBatchForm({ title: '', description: '', duration: '', durationType: 'days', originalPrice: '', offerPrice: '', maxParticipants: 50, features: '', guideLink: '', thumbnailUrl: '' });
+      setBatchForm({ title: '', description: '', duration: '', durationType: 'days', originalPrice: '', offerPrice: '', maxParticipants: 50, features: '', guideLink: '', thumbnailUrl: '', curriculum: [] });
       const r = await api.get('/batches'); setBatches(r.data.batches);
     } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
   };
@@ -103,6 +122,7 @@ const AdminDashboard = () => {
           {[
             { key: 'dashboard', icon: <FiActivity />, label: 'Overview' },
             { key: 'batches', icon: <FiPackage />, label: 'Batches' },
+            { key: 'curriculum', icon: <FiBook />, label: 'Curriculum' },
             { key: 'users', icon: <FiUsers />, label: 'Users' },
             { key: 'enrollments', icon: <FiEye />, label: 'Enrollments' },
           ].map(item => (
@@ -206,7 +226,7 @@ const AdminDashboard = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontWeight: 800 }}>Manage Batches</h2>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-primary btn-sm" onClick={() => { setEditingBatchId(null); setBatchForm({ title: '', description: '', duration: '', durationType: 'days', originalPrice: '', offerPrice: '', maxParticipants: 50, features: '', guideLink: '', thumbnailUrl: '' }); setShowBatchForm(true); }}><FiPlus /> New Batch</button>
+                  <button className="btn btn-primary btn-sm" onClick={() => { setEditingBatchId(null); setBatchForm({ title: '', description: '', duration: '', durationType: 'days', originalPrice: '', offerPrice: '', maxParticipants: 50, features: '', guideLink: '', thumbnailUrl: '', curriculum: [] }); setShowBatchForm(true); }}><FiPlus /> New Batch</button>
                   <button className="btn btn-secondary btn-sm" onClick={() => setShowChallengeForm(true)}><FiPlus /> New Challenge</button>
                 </div>
               </div>
@@ -223,6 +243,62 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* CURRICULUM TAB - SEPARATE MANAGEMENT */}
+          {tab === 'curriculum' && (
+            <div className="fade-in">
+              <h2 style={{ fontWeight: 800, marginBottom: 24 }}>Manage Course Curriculum</h2>
+              {selectedBatchForCurriculum ? (
+                <div className="curriculum-editor-view">
+                   <button className="btn btn-secondary btn-sm" style={{marginBottom: 20}} onClick={() => setSelectedBatchForCurriculum(null)}>
+                     <FiArrowLeft /> Back to Batch List
+                   </button>
+                   <div className="card" style={{marginBottom: 20}}>
+                     <h3 style={{fontWeight: 700}}>{selectedBatchForCurriculum.title}</h3>
+                     <p style={{color: 'var(--text-muted)'}}>Manage modules and items for this program.</p>
+                   </div>
+                   
+                   <CurriculumManager 
+                      curriculum={selectedBatchForCurriculum.curriculum || []} 
+                      onChange={(newCurriculum) => {
+                        const updatedBatch = { ...selectedBatchForCurriculum, curriculum: newCurriculum };
+                        setSelectedBatchForCurriculum(updatedBatch);
+                      }} 
+                   />
+                   
+                   <button 
+                     className="btn btn-primary" 
+                     style={{marginTop: 20, width: '100%'}} 
+                     onClick={async () => {
+                        try {
+                          await api.put(`/batches/${selectedBatchForCurriculum._id}`, { curriculum: selectedBatchForCurriculum.curriculum });
+                          toast.success('Curriculum saved successfully!');
+                          const r = await api.get('/batches'); 
+                          setBatches(r.data.batches);
+                          setSelectedBatchForCurriculum(null);
+                        } catch {
+                          toast.error('Failed to save curriculum');
+                        }
+                     }}
+                   >
+                     Save Curriculum Changes
+                   </button>
+                </div>
+              ) : (
+                <div className="grid grid-3" style={{ gap: 16 }}>
+                  {batches.map(b => (
+                    <div key={b._id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <h4 style={{ fontWeight: 600 }}>{b.title}</h4>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{b.curriculum?.length || 0} Modules • {b.curriculum?.reduce((acc, m) => acc + (m.items?.length || 0), 0) || 0} Items</p>
+                      <button className="btn btn-sm btn-outline" style={{marginTop: 'auto'}} onClick={() => setSelectedBatchForCurriculum(b)}>
+                        <FiEdit3 /> Edit Curriculum
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

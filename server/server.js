@@ -24,6 +24,8 @@ app.use('/api/meals', require('./routes/mealRoutes'));
 app.use('/api/streaks', require('./routes/streakRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/upload', require('./routes/uploadRoutes'));
+app.use('/api/files', require('./routes/fileRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
