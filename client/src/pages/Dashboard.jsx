@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { FiActivity, FiTarget, FiCalendar, FiCamera, FiEdit3, FiAward, FiArrowRight, FiPlayCircle } from 'react-icons/fi';
 import { GiMeal } from 'react-icons/gi';
+import { FiActivity, FiTarget, FiCalendar, FiEdit3, FiAward, FiArrowRight, FiPlayCircle, FiMessageSquare } from 'react-icons/fi';
+import Chat from '../components/Chat';
 
 const getYouTubeID = (url) => {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -19,6 +20,7 @@ const Dashboard = () => {
   const [selectedEnrollment, setSelectedEnrollment] = useState(null);
   const [streak, setStreak] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
     api.get('/enrollments/my').then(r => {
@@ -161,6 +163,33 @@ const Dashboard = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Chat Section */}
+                <div style={{ position: 'fixed', bottom: 30, right: 30, zIndex: 1000 }}>
+                  {showChat ? (
+                    <div style={{ width: 350 }}>
+                      <Chat 
+                        batchId={selectedEnrollment.batchId._id} 
+                        receiverId={selectedEnrollment.batchId.createdBy} 
+                        onClose={() => setShowChat(false)} 
+                      />
+                    </div>
+                  ) : (
+                    <button 
+                      className="btn btn-primary" 
+                      style={{ borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-lg)' }}
+                      onClick={() => {
+                        if (selectedEnrollment.status !== 'active') {
+                          toast.error('Chat is locked until batch is activated');
+                          return;
+                        }
+                        setShowChat(true);
+                      }}
+                    >
+                      <FiMessageSquare size={24} />
+                    </button>
+                  )}
+                </div>
 
                 {/* Streak flame */}
                 {streak && streak.currentStreak > 0 && (

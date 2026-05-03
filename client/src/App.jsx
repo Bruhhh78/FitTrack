@@ -12,8 +12,10 @@ import Dashboard from './pages/Dashboard';
 import MeasurementForm from './pages/MeasurementForm';
 import MealTracker from './pages/MealTracker';
 import StreakDashboard from './pages/StreakDashboard';
-import Checkout from './pages/Checkout';
+
 import Learn from './pages/Learn';
+import Messenger from './pages/Messenger';
+import Notifications from './pages/Notifications';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminBatchView from './pages/admin/AdminBatchView';
 
@@ -29,13 +31,15 @@ function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/batches" element={<BatchList />} />
         <Route path="/batches/:id" element={<ProtectedRoute><BatchDetail /></ProtectedRoute>} />
-        <Route path="/checkout/:id" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/dashboard/:batchId" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/learn/:batchId" element={<ProtectedRoute><Learn /></ProtectedRoute>} />
         <Route path="/measurements/:batchId" element={<ProtectedRoute><MeasurementForm /></ProtectedRoute>} />
         <Route path="/meals/:batchId" element={<ProtectedRoute><MealTracker /></ProtectedRoute>} />
         <Route path="/streak/:batchId" element={<ProtectedRoute><StreakDashboard /></ProtectedRoute>} />
+        <Route path="/messenger" element={<ProtectedRoute><Messenger /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/admin/batch/:id" element={<AdminRoute><AdminBatchView /></AdminRoute>} />
       </Routes>

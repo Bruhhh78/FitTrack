@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { FiUsers, FiPackage, FiActivity, FiPlus, FiEdit2, FiTrash2, FiEye, FiImage, FiX, FiBook, FiArrowLeft, FiEdit3 } from 'react-icons/fi';
+import { FiUsers, FiPackage, FiActivity, FiPlus, FiEdit2, FiTrash2, FiEye, FiImage, FiX, FiBook, FiArrowLeft, FiEdit3, FiKey, FiCopy, FiCheck, FiMessageSquare } from 'react-icons/fi';
 import CurriculumManager from '../../components/admin/CurriculumManager';
+import Chat from '../../components/Chat';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -21,8 +22,20 @@ const AdminDashboard = () => {
   const [userImages, setUserImages] = useState(null);
   const [editingBatchId, setEditingBatchId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showAllotModal, setShowAllotModal] = useState(false);
+  const [selectedUserForAllot, setSelectedUserForAllot] = useState(null);
+  const [allotForm, setAllotForm] = useState({ batchId: '' });
+  const [generatedTokens, setGeneratedTokens] = useState({}); // { enrollmentId: token }
+  const [copiedToken, setCopiedToken] = useState(null);
+  const [activeChat, setActiveChat] = useState(null); // { userId, batchId, userName, batchTitle }
 
   const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    if (tabParam) setTab(tabParam);
+  }, [location.search]);
 
   useEffect(() => {
     Promise.all([
@@ -112,6 +125,56 @@ const AdminDashboard = () => {
     try { const { data } = await api.get(`/admin/user-images/${userId}`); setUserImages(data); } catch { toast.error('Failed'); }
   };
 
+  const handleAllotBatch = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post('/admin/allot-batch', { userId: selectedUserForAllot._id, batchId: allotForm.batchId });
+      toast.success('Batch alloted successfully!');
+      setShowAllotModal(false);
+      setAllotForm({ batchId: '' });
+      // Refresh enrollments or users if needed
+      const u = await api.get('/admin/users');
+      setUsers(u.data.users);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to allot batch');
+    }
+  };
+
+  const handleGenerateToken = async (enrollmentId, phone) => {
+    try {
+      const { data } = await api.post('/admin/generate-token', { enrollmentId });
+      setGeneratedTokens(prev => ({ ...prev, [enrollmentId]: data.token }));
+      toast.success('Token generated!');
+    } catch (err) {
+      toast.error('Failed to generate token');
+    }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    setCopiedToken(text);
+    toast.success('Token copied!');
+    setTimeout(() => setCopiedToken(null), 2000);
+  };
+
+  const shareOnWhatsapp = (phone, token, batchTitle) => {
+    const message = `Hello! Your access token for ${batchTitle} is: ${token}. Please enter this on the website to unlock your program.`;
+    const url = `https://wa.me/${phone?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
+  const handleClearChat = async (userId, batchId) => {
+    if (!confirm('Clear all chat history for this user?')) return;
+    try {
+      await api.post('/chat/clear', { userId, batchId });
+      toast.success('Chat history cleared');
+      // Force reload active chat or refresh messages
+      setActiveChat(prev => ({ ...prev })); 
+    } catch {
+      toast.error('Failed to clear chat');
+    }
+  };
+
   if (loading) return <div className="page-wrapper"><div className="page-loading"><div className="spinner" /></div></div>;
 
   return (
@@ -125,6 +188,7 @@ const AdminDashboard = () => {
             { key: 'curriculum', icon: <FiBook />, label: 'Curriculum' },
             { key: 'users', icon: <FiUsers />, label: 'Users' },
             { key: 'enrollments', icon: <FiEye />, label: 'Enrollments' },
+            { key: 'messages', icon: <FiMessageSquare />, label: 'Messages' },
           ].map(item => (
             <button key={item.key} className={`sidebar-link ${tab === item.key ? 'active' : ''}`} onClick={() => setTab(item.key)}>
               {item.icon} {item.label}
@@ -318,7 +382,11 @@ const AdminDashboard = () => {
                         </td>
                         <td>{u.email}</td><td>{u.phone || '-'}</td>
                         <td>{new Date(u.createdAt).toLocaleDateString()}</td>
-                        <td><button className="btn btn-sm btn-secondary" onClick={() => viewUserImages(u._id)}><FiImage /> Images</button></td>
+                        <td style={{ display: 'flex', gap: 8 }}>
+                          <button className="btn btn-sm btn-secondary" onClick={() => viewUserImages(u._id)} title="View Images"><FiImage /></button>
+                          <button className="btn btn-sm btn-primary" onClick={() => { setSelectedUserForAllot(u); setShowAllotModal(true); }} title="Allot Batch"><FiPlus /> Allot</button>
+                          <button className="btn btn-sm btn-info" onClick={() => { setTab('messages'); setActiveChat({ userId: u._id, userName: u.name }); }} title="Chat"><FiMessageSquare /></button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -330,7 +398,7 @@ const AdminDashboard = () => {
           {/* ENROLLMENTS TAB */}
           {tab === 'enrollments' && (
             <div className="fade-in">
-              <h2 style={{ fontWeight: 800, marginBottom: 24 }}>Enrollments</h2>
+              <h2 style={{ fontWeight: 800, marginBottom: 24 }}>Enrollments & Tokens</h2>
               <div style={{ marginBottom: 16 }}>
                 <label className="form-label">Select Batch</label>
                 <select className="form-input" onChange={e => loadEnrollments(e.target.value)} value={selectedBatch || ''}>
@@ -341,20 +409,139 @@ const AdminDashboard = () => {
               {enrollments.length > 0 ? (
                 <div className="table-container">
                   <table>
-                    <thead><tr><th>User</th><th>Email</th><th>Status</th><th>Enrolled On</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>User</th><th>Email</th><th>Status</th><th>Token</th><th>Actions</th></tr></thead>
                     <tbody>
                       {enrollments.map(e => (
                         <tr key={e._id}>
                           <td>{e.userId?.name}</td><td>{e.userId?.email}</td>
                           <td><span className={`badge ${e.status === 'active' ? 'badge-success' : 'badge-warning'}`}>{e.status}</span></td>
-                          <td>{new Date(e.enrolledAt).toLocaleDateString()}</td>
-                          <td><button className="btn btn-sm btn-secondary" onClick={() => viewUserImages(e.userId?._id)}><FiImage /></button></td>
+                          <td>
+                            {e.token ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <code style={{ background: 'var(--bg-tertiary)', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>{e.token}</code>
+                                <button className="btn-icon" onClick={() => copyToClipboard(e.token)} title="Copy Token">
+                                  {copiedToken === e.token ? <FiCheck style={{ color: 'var(--success)' }} /> : <FiCopy />}
+                                </button>
+                              </div>
+                            ) : (
+                              generatedTokens[e._id] ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <code style={{ background: 'var(--bg-tertiary)', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>{generatedTokens[e._id]}</code>
+                                  <button className="btn-icon" onClick={() => copyToClipboard(generatedTokens[e._id])} title="Copy Token">
+                                    {copiedToken === generatedTokens[e._id] ? <FiCheck style={{ color: 'var(--success)' }} /> : <FiCopy />}
+                                  </button>
+                                </div>
+                              ) : (
+                                <button className="btn btn-sm btn-outline" onClick={() => handleGenerateToken(e._id, e.userId?.phone)}>
+                                  <FiKey /> Generate
+                                </button>
+                              )
+                            )}
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <button className="btn btn-sm btn-secondary" onClick={() => viewUserImages(e.userId?._id)} title="View Images"><FiImage /></button>
+                              {(e.token || generatedTokens[e._id]) && (
+                                <button className="btn btn-sm btn-success" onClick={() => shareOnWhatsapp(e.userId?.phone, e.token || generatedTokens[e._id], e.batchId?.title)} title="Send via WhatsApp">
+                                  <span style={{ fontSize: '1rem' }}>💬</span>
+                                </button>
+                              )}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               ) : <p style={{ color: 'var(--text-muted)' }}>Select a batch to view enrollments.</p>}
+            </div>
+          )}
+
+          {/* MESSAGES TAB */}
+          {tab === 'messages' && (
+            <div className="fade-in">
+              <h2 style={{ fontWeight: 800, marginBottom: 24 }}>Messaging System</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 24, height: 'calc(100vh - 200px)' }}>
+                {/* Users List for Chat */}
+                <div className="card" style={{ padding: 0, overflowY: 'auto' }}>
+                  <div style={{ padding: 16, borderBottom: '1px solid var(--border)' }}>
+                    <h4 style={{ fontWeight: 700, margin: 0 }}>Recent Users</h4>
+                  </div>
+                  {users.map(u => (
+                    <div 
+                      key={u._id} 
+                      className={`chat-user-item ${activeChat?.userId === u._id ? 'active' : ''}`}
+                      onClick={() => setActiveChat({ userId: u._id, userName: u.name })}
+                      style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: '0.2s' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {u.avatar ? <img src={u.avatar} className="avatar" style={{ width: 32, height: 32 }} alt="" /> : <div className="avatar avatar-placeholder" style={{ width: 32, height: 32, fontSize: '0.8rem' }}>{u.name[0]}</div>}
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{u.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Chat Window */}
+                <div className="chat-main-container">
+                  {activeChat?.userId ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                           <h3 style={{ margin: 0, fontWeight: 700 }}>Chat with {activeChat.userName}</h3>
+                           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                             <label className="form-label" style={{ marginBottom: 0 }}>Select Batch:</label>
+                             <select 
+                               className="form-input" 
+                               style={{ padding: '4px 8px', fontSize: '0.8rem', width: 'auto' }}
+                               onChange={e => setActiveChat(prev => ({ ...prev, batchId: e.target.value }))}
+                               value={activeChat.batchId || ''}
+                             >
+                               <option value="">Choose Batch</option>
+                               {batches.map(b => <option key={b._id} value={b._id}>{b.title}</option>)}
+                             </select>
+                           </div>
+                        </div>
+                        {activeChat.batchId && (
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleClearChat(activeChat.userId, activeChat.batchId)}>
+                            <FiTrash2 /> Clear History
+                          </button>
+                        )}
+                      </div>
+
+                      {activeChat.batchId ? (
+                        <Chat 
+                          batchId={activeChat.batchId} 
+                          receiverId={activeChat.userId} 
+                          isAdmin={true} 
+                        />
+                      ) : (
+                        <div className="empty-state card" style={{ flex: 1, justifyContent: 'center' }}>
+                          <FiPackage size={40} style={{ opacity: 0.2, marginBottom: 16 }} />
+                          <p>Please select a batch to start chatting.</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="empty-state card" style={{ height: '100%', justifyContent: 'center' }}>
+                      <FiMessageSquare size={48} style={{ opacity: 0.2, marginBottom: 20 }} />
+                      <h3>No User Selected</h3>
+                      <p>Select a user from the left to start messaging.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <style dangerouslySetInnerHTML={{ __html: `
+                .chat-user-item:hover { background: var(--bg-tertiary); }
+                .chat-user-item.active { background: var(--bg-tertiary); border-left: 3px solid var(--accent); }
+                .chat-main-container { height: 100%; }
+                .btn-outline-danger { border: 1px solid var(--danger); color: var(--danger); background: transparent; }
+                .btn-outline-danger:hover { background: var(--danger); color: #fff; }
+              `}} />
             </div>
           )}
 
@@ -554,6 +741,27 @@ const AdminDashboard = () => {
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+          )}
+          {/* Allot Batch Modal */}
+          {showAllotModal && (
+            <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAllotModal(false)}>
+              <div className="modal">
+                <div className="modal-header">
+                  <h3 className="modal-title">Allot Batch to {selectedUserForAllot?.name}</h3>
+                  <button className="modal-close" onClick={() => setShowAllotModal(false)}>×</button>
+                </div>
+                <form onSubmit={handleAllotBatch}>
+                  <div className="form-group">
+                    <label className="form-label">Select Program</label>
+                    <select className="form-input" value={allotForm.batchId} onChange={e => setAllotForm({ batchId: e.target.value })} required>
+                      <option value="">Choose a program</option>
+                      {batches.map(b => <option key={b._id} value={b._id}>{b.title}</option>)}
+                    </select>
+                  </div>
+                  <button className="btn btn-primary" style={{ width: '100%' }}>Confirm Allotment</button>
+                </form>
               </div>
             </div>
           )}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { FiClock, FiUsers, FiCheckCircle, FiDownload, FiVideo } from 'react-icons/fi';
+import { FiClock, FiUsers, FiCheckCircle, FiDownload, FiVideo, FiKey, FiLock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 const getYouTubeID = (url) => {
@@ -17,21 +17,28 @@ const BatchDetail = () => {
   const navigate = useNavigate();
   const [batch, setBatch] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [paying, setPaying] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [showTokenModal, setShowTokenModal] = useState(false);
+  const [token, setToken] = useState('');
 
   useEffect(() => {
     api.get(`/batches/${id}`).then(r => { setBatch(r.data.batch); setLoading(false); }).catch(() => { toast.error('Failed to load'); setLoading(false); });
   }, [id]);
 
-  const handleEnroll = async () => {
+  const handleUnlock = async (e) => {
+    e.preventDefault();
     if (!user) return navigate('/login');
-    setPaying(true);
+    setValidating(true);
     try {
-      await api.post('/enrollments/initialize', { batchId: id });
-      navigate(`/checkout/${id}`);
+      await api.post('/batches/validate-token', { batchId: id, token });
+      toast.success('Access granted! Welcome to the program.');
+      setShowTokenModal(false);
+      // Refresh batch data to show dashboard link
+      const r = await api.get(`/batches/${id}`);
+      setBatch(r.data.batch);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to initialize enrollment');
-    } finally { setPaying(false); }
+      toast.error(err.response?.data?.message || 'Invalid token');
+    } finally { setValidating(false); }
   };
 
   if (loading) return <div className="page-wrapper"><div className="page-loading"><div className="spinner" /></div></div>;
@@ -140,8 +147,8 @@ const BatchDetail = () => {
                         Dashboard
                       </button>
                     ) : (
-                      <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={handleEnroll} disabled={paying}>
-                        {paying ? '...' : 'Enroll Now'}
+                      <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={() => setShowTokenModal(true)}>
+                        <FiKey /> Unlock with Token
                       </button>
                     )}
                   </div>
@@ -151,6 +158,39 @@ const BatchDetail = () => {
           </div>
         </div>
       </section>
+      {showTokenModal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowTokenModal(false)}>
+          <div className="modal" style={{ maxWidth: 400 }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Authorize Access</h3>
+              <button className="modal-close" onClick={() => setShowTokenModal(false)}>×</button>
+            </div>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(13, 148, 136, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <FiLock style={{ color: 'var(--accent)', fontSize: '1.5rem' }} />
+              </div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Please enter the 7-character Batch Token provided by your instructor.</p>
+            </div>
+            <form onSubmit={handleUnlock}>
+              <div className="form-group">
+                <input 
+                  className="form-input" 
+                  type="text" 
+                  placeholder="Enter Token (e.g. A1B2C3D)" 
+                  value={token} 
+                  onChange={e => setToken(e.target.value.toUpperCase())} 
+                  maxLength={7}
+                  style={{ textAlign: 'center', fontSize: '1.2rem', letterSpacing: 4, fontWeight: 700 }}
+                  required 
+                />
+              </div>
+              <button className="btn btn-primary" style={{ width: '100%' }} disabled={validating}>
+                {validating ? 'Verifying...' : 'Unlock Program'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

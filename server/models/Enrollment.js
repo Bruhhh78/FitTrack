@@ -16,6 +16,11 @@ const enrollmentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Payment',
     },
+    token: {
+      type: String,
+      sparse: true,
+      unique: true,
+    },
     status: {
       type: String,
       enum: ['pending', 'active', 'completed', 'cancelled', 'expired'],

@@ -4,7 +4,7 @@ const Enrollment = require('../models/Enrollment');
 const Measurement = require('../models/Measurement');
 const MealLog = require('../models/MealLog');
 const Streak = require('../models/Streak');
-const Payment = require('../models/Payment');
+// const Payment = require('../models/Payment');
 
 const getDashboardStats = async (req, res) => {
   try {
@@ -14,9 +14,8 @@ const getDashboardStats = async (req, res) => {
     const totalEnrollments = await Enrollment.countDocuments();
     const activeEnrollments = await Enrollment.countDocuments({ status: 'active' });
     
-    // Revenue stats
-    const payments = await Payment.find({ status: 'paid' });
-    const totalRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    // Revenue stats (Removed for now as we are using offline payment)
+    const totalRevenue = 0; // payments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
     // Recent activity
     const recentUsers = await User.find({ role: 'user' }).sort({ createdAt: -1 }).limit(5).select('name email avatar createdAt');
@@ -116,4 +115,64 @@ const getUserProgress = async (req, res) => {
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
-module.exports = { getDashboardStats, getAllUsers, getEnrollmentsByBatch, getUserImages, getUserProgress };
+const allotBatch = async (req, res) => {
+  try {
+    const { userId, batchId } = req.body;
+    
+    // Check if already alloted
+    const existing = await Enrollment.findOne({ userId, batchId });
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'Batch already alloted to this user' });
+    }
+
+    const enrollment = await Enrollment.create({
+      userId,
+      batchId,
+      status: 'pending'
+    });
+
+    // Create notification
+    const { createNotification } = require('./notificationController');
+    const batch = await Batch.findById(batchId);
+    await createNotification({
+      recipient: userId,
+      type: 'batch_allotted',
+      title: 'Program Allotted!',
+      message: `You have been allotted to the program: ${batch.title}. Please check your dashboard to unlock it.`,
+      link: '/batches'
+    });
+
+    res.json({ success: true, message: 'Batch alloted successfully', enrollment });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+const generateToken = async (req, res) => {
+  try {
+    const { enrollmentId } = req.body;
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let token = '';
+    for (let i = 0; i < 7; i++) {
+      token += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    const enrollment = await Enrollment.findByIdAndUpdate(
+      enrollmentId,
+      { token },
+      { new: true }
+    );
+
+    if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
+
+    res.json({ success: true, token: enrollment.token });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+module.exports = { 
+  getDashboardStats, 
+  getAllUsers, 
+  getEnrollmentsByBatch, 
+  getUserImages, 
+  getUserProgress,
+  allotBatch,
+  generateToken
+};
