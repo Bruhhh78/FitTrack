@@ -7,7 +7,8 @@ const {
   getUserImages, 
   getUserProgress,
   allotBatch,
-  generateToken
+  generateToken,
+  getDailyMonitor
 } = require('../controllers/adminController');
 const { protect, adminOnly } = require('../middleware/auth');
 
@@ -19,5 +20,6 @@ router.get('/user-images/:userId', getUserImages);
 router.get('/user-progress/:userId/:batchId', getUserProgress);
 router.post('/allot-batch', allotBatch);
 router.post('/generate-token', generateToken);
+router.get('/daily-monitor/:batchId', getDailyMonitor);
 
 module.exports = router;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import { FiClock, FiUsers, FiCheckCircle, FiDownload, FiVideo, FiKey, FiLock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -48,7 +49,7 @@ const BatchDetail = () => {
     <div className="page-wrapper">
       <section className="section">
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 40, alignItems: 'start' }}>
+          <div className="batch-detail-grid">
             <div className="fade-in">
               <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                 <span className="badge badge-teal"><FiClock /> {batch.duration} {batch.durationType}</span>
@@ -191,6 +192,7 @@ const BatchDetail = () => {
           </div>
         </div>
       )}
+      <Footer />
     </div>
   );
 };

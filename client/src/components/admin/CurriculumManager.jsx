@@ -323,35 +323,35 @@ const CurriculumManager = ({ curriculum = [], onChange }) => {
       <style dangerouslySetInnerHTML={{ __html: `
         .curriculum-manager {
           margin-top: 20px;
-          border: 1px solid var(--border);
+          border: 1px solid var(--glass-border);
           border-radius: var(--radius-md);
-          padding: 16px;
-          background: var(--bg-secondary);
+          padding: 24px;
+          background: var(--bg-dark);
         }
         .manager-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 16px;
+          margin-bottom: 24px;
         }
         .modules-list {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 16px;
         }
         .curriculum-module-card {
-          background: var(--bg-primary);
-          border: 1px solid var(--border);
+          background: var(--bg-card);
+          border: 1px solid var(--glass-border);
           border-radius: var(--radius-md);
           overflow: hidden;
         }
         .module-header {
           display: flex;
           align-items: center;
-          padding: 10px 12px;
-          background: var(--bg-tertiary);
-          border-bottom: 1px solid var(--border);
-          gap: 10px;
+          padding: 12px 16px;
+          background: rgba(255, 255, 255, 0.02);
+          border-bottom: 1px solid var(--glass-border);
+          gap: 12px;
         }
         .drag-handle {
           cursor: grab;
@@ -363,40 +363,43 @@ const CurriculumManager = ({ curriculum = [], onChange }) => {
           flex: 1;
           background: transparent;
           border: none;
-          font-weight: 600;
-          color: var(--text-primary);
-          padding: 4px 8px;
+          font-weight: 700;
+          color: var(--text-main);
+          padding: 6px 10px;
+          font-family: inherit;
         }
         .module-title-input:focus {
-          outline: 1px solid var(--accent);
-          border-radius: 4px;
+          outline: 1px solid var(--primary);
+          border-radius: 6px;
+          background: rgba(0,0,0,0.2);
         }
         .module-actions {
           display: flex;
-          gap: 4px;
+          gap: 6px;
         }
         .module-body {
-          padding: 12px;
-          background: var(--bg-primary);
+          padding: 16px;
+          background: transparent;
         }
         .items-list {
           display: flex;
           flex-direction: column;
-          gap: 8px;
-          margin-bottom: 12px;
+          gap: 10px;
+          margin-bottom: 16px;
         }
         .curriculum-item-card {
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 8px 12px;
-          background: var(--bg-tertiary);
-          border: 1px dashed var(--border);
+          gap: 12px;
+          padding: 12px 16px;
+          background: var(--bg-deep);
+          border: 1px solid var(--glass-border);
           border-radius: var(--radius-sm);
         }
         .item-icon {
-          color: var(--accent);
+          color: var(--primary);
           display: flex;
+          font-size: 1.1rem;
         }
         .item-content {
           flex: 1;
@@ -407,53 +410,57 @@ const CurriculumManager = ({ curriculum = [], onChange }) => {
         .item-title-input {
           background: transparent;
           border: none;
-          font-size: 0.9rem;
-          font-weight: 500;
-          color: var(--text-primary);
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: var(--text-main);
+          font-family: inherit;
         }
         .item-url-input {
           background: transparent;
           border: none;
-          font-size: 0.75rem;
-          color: var(--text-muted);
+          font-size: 0.8rem;
+          color: var(--text-dim);
+          font-family: inherit;
         }
         .item-title-input:focus, .item-url-input:focus {
           outline: none;
-          color: var(--accent);
+          color: var(--primary);
         }
         .btn-icon {
-          background: transparent;
+          background: rgba(255, 255, 255, 0.05);
           border: none;
-          color: var(--text-muted);
+          color: var(--text-dim);
           cursor: pointer;
-          padding: 4px;
+          width: 32px;
+          height: 32px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 4px;
+          border-radius: 8px;
+          transition: var(--transition);
         }
         .btn-icon:hover {
-          background: var(--border);
-          color: var(--text-primary);
+          background: var(--primary);
+          color: #000;
         }
         .btn-danger-soft:hover {
-          background: #fee2e2;
-          color: #ef4444;
+          background: #ef4444 !important;
+          color: white !important;
         }
         .add-item-actions {
           display: flex;
-          gap: 8px;
+          gap: 10px;
           flex-wrap: wrap;
         }
         .btn-xs {
-          padding: 4px 8px;
-          font-size: 0.7rem;
+          padding: 6px 12px;
+          font-size: 0.75rem;
         }
         .empty-curriculum {
           text-align: center;
-          padding: 24px;
+          padding: 40px;
           color: var(--text-muted);
-          border: 1px dashed var(--border);
+          border: 2px dashed var(--glass-border);
           border-radius: var(--radius-md);
         }
         .upload-label {
@@ -462,16 +469,16 @@ const CurriculumManager = ({ curriculum = [], onChange }) => {
           justify-content: center;
           width: 32px;
           height: 32px;
-          border-radius: 4px;
-          background: var(--bg-secondary);
-          border: 1px solid var(--border);
-          color: var(--accent);
+          border-radius: 8px;
+          background: rgba(245, 158, 11, 0.1);
+          border: 1px solid var(--primary-glow);
+          color: var(--primary);
           cursor: pointer;
           transition: all 0.2s;
         }
         .upload-label:hover {
-          background: var(--accent);
-          color: white;
+          background: var(--primary);
+          color: #000;
         }
         .upload-label.loading {
           opacity: 0.5;

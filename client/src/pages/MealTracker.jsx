@@ -22,7 +22,8 @@ const MealTracker = () => {
   const [tab, setTab] = useState('today');
 
   const loadData = () => {
-    api.get(`/meals/today/${batchId}`).then(r => setTodayLog(r.data.mealLog)).catch(() => {});
+    const today = new Date().toLocaleDateString('en-CA');
+    api.get(`/meals/today/${batchId}?date=${today}`).then(r => setTodayLog(r.data.mealLog)).catch(() => {});
     api.get(`/meals/batch/${batchId}`).then(r => setHistory(r.data.mealLogs)).catch(() => {});
   };
 
@@ -39,13 +40,22 @@ const MealTracker = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!editMeal) return;
+    
+    // Validation
+    if (!form.description) return toast.error('Please describe what you ate');
+    if (!form.calories) return toast.error('Please enter approximate calories');
+    if (!form.time) return toast.error('Please enter meal time');
+    if (!mealImage && !mealPreview) return toast.error('Please upload a photo of your meal');
+
     setLoading(true);
     try {
       let imageUrl = '';
       if (mealImage) imageUrl = await handleImageUpload(mealImage);
+      else imageUrl = mealPreview; // Use existing if not changed
       const existingMeal = todayLog?.meals?.find(m => m.type === editMeal);
       await api.post('/meals', {
-        batchId, date: new Date().toISOString(),
+        batchId, 
+        date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD format
         meals: [{ type: editMeal, description: form.description, calories: Number(form.calories) || 0, time: form.time, image: imageUrl || existingMeal?.image || '' }],
       });
       toast.success(`${editMeal} logged!`);
@@ -85,18 +95,20 @@ const MealTracker = () => {
             {mealTypes.map(mt => {
               const logged = todayLog?.meals?.find(m => m.type === mt.type);
               return (
-                <div key={mt.type} className="card meal-card" style={{ marginBottom: 12, cursor: 'pointer' }} onClick={() => openMealForm(mt.type)}>
+                <div key={mt.type} className="card meal-card" onClick={() => openMealForm(mt.type)} style={{ marginBottom: 12 }}>
                   <div className={`meal-icon ${mt.cls}`}>{mt.label.split(' ')[0]}</div>
                   <div style={{ flex: 1 }}>
-                    <h4 style={{ fontWeight: 600 }}>{mt.label.split(' ')[1]}</h4>
+                    <h4 style={{ fontWeight: 700 }}>{mt.label.split(' ')[1]}</h4>
                     {logged ? (
-                      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{logged.description || 'Logged'}{logged.calories ? ` • ${logged.calories} cal` : ''}</p>
+                      <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>{logged.description || 'Logged'}{logged.calories ? ` • ${logged.calories} cal` : ''}</p>
                     ) : (
-                      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Tap to log</p>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Tap to log meal</p>
                     )}
                   </div>
-                  {logged ? <span className="badge badge-success">✓ Logged</span> : <FiPlus style={{ color: 'var(--accent)' }} />}
-                  {logged?.image && <img src={logged.image} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }} />}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {logged ? <span className="badge badge-success">✓ Logged</span> : <FiPlus style={{ color: 'var(--primary)' }} />}
+                    {logged?.image && <img src={logged.image} alt="" style={{ width: 48, height: 48, borderRadius: 12, objectFit: 'cover', border: '1px solid var(--glass-border)' }} />}
+                  </div>
                 </div>
               );
             })}

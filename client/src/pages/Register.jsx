@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiUser, FiMail, FiLock, FiPhone } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiPhone, FiCheckCircle } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import toast from 'react-hot-toast';
 
@@ -27,35 +27,70 @@ const Register = () => {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card fade-in">
-        <h1 className="auth-title">Create Account</h1>
-        <p className="auth-subtitle">Start your transformation today</p>
-        <button className="google-btn" onClick={() => window.location.href = '/api/auth/google'} type="button">
-          <FcGoogle size={22} /> Continue with Google
+    <div className="auth-page" style={{ 
+      minHeight: '100vh', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      padding: '40px 20px',
+      background: 'radial-gradient(circle at top right, rgba(245, 158, 11, 0.05), transparent), radial-gradient(circle at bottom left, rgba(249, 115, 22, 0.05), transparent)'
+    }}>
+      <div className="card animate-fade" style={{ width: '100%', maxWidth: '480px', padding: '40px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <h1 style={{ fontSize: '2rem', marginBottom: '8px' }}>Create Account</h1>
+          <p style={{ color: 'var(--text-dim)' }}>Join FitTrack and start your 21-day journey</p>
+        </div>
+
+        <button className="btn btn-outline" onClick={() => window.location.href = '/api/auth/google'} style={{ width: '100%', marginBottom: '24px', display: 'flex', justifyContent: 'center', background: 'rgba(255,255,255,0.02)' }}>
+          <FcGoogle size={20} style={{ marginRight: 10 }} /> Register with Google
         </button>
-        <div className="divider">or register with email</div>
+
+        <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }}></div>
+          <span style={{ margin: '0 15px' }}>or with email</span>
+          <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }}></div>
+        </div>
+
         <form onSubmit={handleSubmit}>
-          {[
-            { name: 'name', label: 'Full Name', icon: <FiUser />, type: 'text', placeholder: 'John Doe' },
-            { name: 'email', label: 'Email', icon: <FiMail />, type: 'email', placeholder: 'you@example.com' },
-            { name: 'phone', label: 'Phone (optional)', icon: <FiPhone />, type: 'tel', placeholder: '+91 9999999999' },
-            { name: 'password', label: 'Password', icon: <FiLock />, type: 'password', placeholder: '••••••••' },
-          ].map(f => (
-            <div className="form-group" key={f.name}>
-              <label className="form-label">{f.label}</label>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>{f.icon}</span>
-                <input className="form-input" style={{ paddingLeft: 40 }} type={f.type} name={f.name} placeholder={f.placeholder} value={form[f.name]} onChange={handleChange} required={f.name !== 'phone'} />
-              </div>
+          <div className="form-group">
+            <label className="form-label">Full Name</label>
+            <div style={{ position: 'relative' }}>
+              <FiUser style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} />
+              <input className="form-input" style={{ paddingLeft: 48 }} type="text" name="name" placeholder="John Doe" value={form.name} onChange={handleChange} required />
             </div>
-          ))}
-          <button className="btn btn-primary" style={{ width: '100%', marginTop: 8 }} disabled={loading}>
-            {loading ? 'Creating Account...' : 'Create Account'}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Email Address</label>
+            <div style={{ position: 'relative' }}>
+              <FiMail style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} />
+              <input className="form-input" style={{ paddingLeft: 48 }} type="email" name="email" placeholder="name@company.com" value={form.email} onChange={handleChange} required />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Phone Number</label>
+            <div style={{ position: 'relative' }}>
+              <FiPhone style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} />
+              <input className="form-input" style={{ paddingLeft: 48 }} type="tel" name="phone" placeholder="+91 99999..." value={form.phone} onChange={handleChange} />
+            </div>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '32px' }}>
+            <label className="form-label">Password</label>
+            <div style={{ position: 'relative' }}>
+              <FiLock style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} />
+              <input className="form-input" style={{ paddingLeft: 48 }} type="password" name="password" placeholder="Min. 6 characters" value={form.password} onChange={handleChange} required />
+            </div>
+          </div>
+
+          <button className="btn btn-primary" style={{ width: '100%', padding: '16px' }} disabled={loading}>
+            {loading ? 'Creating Account...' : <>Create Account <FiCheckCircle style={{ marginLeft: 8 }} /></>}
           </button>
         </form>
-        <p style={{ textAlign: 'center', marginTop: 24, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          Already have an account? <Link to="/login" style={{ fontWeight: 600 }}>Sign In</Link>
+
+        <p style={{ textAlign: 'center', marginTop: '32px', fontSize: '0.95rem', color: 'var(--text-dim)' }}>
+          Already have an account? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>Sign In</Link>
         </p>
       </div>
     </div>

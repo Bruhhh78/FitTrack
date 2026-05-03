@@ -4,10 +4,11 @@ const { uploadToCloudinary } = require('../middleware/upload');
 const addMealLog = async (req, res) => {
   try {
     const { batchId, date, meals, notes } = req.body;
-    const startOfDay = new Date(date || Date.now());
-    startOfDay.setHours(0, 0, 0, 0);
+    const searchDate = date ? new Date(date) : new Date();
+    const startOfDay = new Date(searchDate);
+    startOfDay.setUTCHours(0, 0, 0, 0);
     const endOfDay = new Date(startOfDay);
-    endOfDay.setHours(23, 59, 59, 999);
+    endOfDay.setUTCHours(23, 59, 59, 999);
 
     let mealLog = await MealLog.findOne({
       userId: req.user._id, batchId,
@@ -42,8 +43,10 @@ const getMealLogsByBatch = async (req, res) => {
 
 const getTodayMealLog = async (req, res) => {
   try {
-    const start = new Date(); start.setHours(0,0,0,0);
-    const end = new Date(); end.setHours(23,59,59,999);
+    const { date } = req.query;
+    const searchDate = date ? new Date(date) : new Date();
+    const start = new Date(searchDate); start.setUTCHours(0,0,0,0);
+    const end = new Date(searchDate); end.setUTCHours(23,59,59,999);
     const mealLog = await MealLog.findOne({ userId: req.user._id, batchId: req.params.batchId, date: { $gte: start, $lte: end } });
     res.json({ success: true, mealLog });
   } catch (error) { res.status(500).json({ message: error.message }); }

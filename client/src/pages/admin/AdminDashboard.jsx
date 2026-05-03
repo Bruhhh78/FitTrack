@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { FiUsers, FiPackage, FiActivity, FiPlus, FiEdit2, FiTrash2, FiEye, FiImage, FiX, FiBook, FiArrowLeft, FiEdit3, FiKey, FiCopy, FiCheck, FiMessageSquare } from 'react-icons/fi';
+import { FiUsers, FiPackage, FiActivity, FiPlus, FiEdit2, FiTrash2, FiEye, FiImage, FiX, FiBook, FiArrowLeft, FiEdit3, FiKey, FiCopy, FiCheck, FiMessageSquare, FiMenu, FiDownload } from 'react-icons/fi';
 import CurriculumManager from '../../components/admin/CurriculumManager';
 import Chat from '../../components/Chat';
 
@@ -28,6 +28,12 @@ const AdminDashboard = () => {
   const [generatedTokens, setGeneratedTokens] = useState({}); // { enrollmentId: token }
   const [copiedToken, setCopiedToken] = useState(null);
   const [activeChat, setActiveChat] = useState(null); // { userId, batchId, userName, batchTitle }
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [monitorData, setMonitorData] = useState([]);
+  const [selectedMonitorBatch, setSelectedMonitorBatch] = useState('');
+  const [monitorLoading, setMonitorLoading] = useState(false);
+  const [selectedMonitorDetail, setSelectedMonitorDetail] = useState(null);
+  const [activeModalDay, setActiveModalDay] = useState(null); // The specific day object being viewed in the modal
 
   const location = useLocation();
 
@@ -121,8 +127,16 @@ const AdminDashboard = () => {
     } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
   };
 
-  const viewUserImages = async (userId) => {
-    try { const { data } = await api.get(`/admin/user-images/${userId}`); setUserImages(data); } catch { toast.error('Failed'); }
+  const viewUserImages = async (userId, batchId = null) => {
+    try { 
+      const url = batchId ? `/admin/user-images/${userId}?batchId=${batchId}` : `/admin/user-images/${userId}`;
+      const { data } = await api.get(url); 
+      setUserImages(data);
+      // Set default active day to today's data if available, otherwise latest compliance day
+      const today = new Date().toISOString().split('T')[0];
+      const todayData = data.complianceData?.find(d => d.date === today);
+      setActiveModalDay(todayData || data.complianceData?.[data.complianceData.length - 1]);
+    } catch { toast.error('Failed'); }
   };
 
   const handleAllotBatch = async (e) => {
@@ -174,23 +188,59 @@ const AdminDashboard = () => {
       toast.error('Failed to clear chat');
     }
   };
+  
+  const loadDailyMonitor = (batchId) => {
+    setSelectedMonitorBatch(batchId);
+    if (!batchId) return;
+    setMonitorLoading(true);
+    api.get(`/admin/daily-monitor/${batchId}`)
+      .then(r => {
+        setMonitorData(r.data.monitorData);
+        setMonitorLoading(false);
+      })
+      .catch(() => setMonitorLoading(false));
+  };
+
+  const downloadImage = (url, name) => {
+    fetch(url)
+      .then(resp => resp.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = name || 'image.jpg';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(() => toast.error('Failed to download image'));
+  };
 
   if (loading) return <div className="page-wrapper"><div className="page-loading"><div className="spinner" /></div></div>;
 
   return (
     <div className="page-wrapper">
       <div className="dashboard">
-        <div className="sidebar">
+        <button 
+          className="sidebar-toggle-btn" 
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          style={{ display: 'none' }}
+        >
+          {sidebarOpen ? <FiX /> : <FiMenu />}
+        </button>
+        <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <h3 style={{ fontWeight: 700, marginBottom: 20, fontSize: '1.1rem' }}>Admin Panel</h3>
           {[
             { key: 'dashboard', icon: <FiActivity />, label: 'Overview' },
             { key: 'batches', icon: <FiPackage />, label: 'Batches' },
             { key: 'curriculum', icon: <FiBook />, label: 'Curriculum' },
+            { key: 'daily-monitor', icon: <FiActivity />, label: 'Daily Monitor' },
             { key: 'users', icon: <FiUsers />, label: 'Users' },
             { key: 'enrollments', icon: <FiEye />, label: 'Enrollments' },
             { key: 'messages', icon: <FiMessageSquare />, label: 'Messages' },
           ].map(item => (
-            <button key={item.key} className={`sidebar-link ${tab === item.key ? 'active' : ''}`} onClick={() => setTab(item.key)}>
+            <button key={item.key} className={`sidebar-link ${tab === item.key ? 'active' : ''}`} onClick={() => { setTab(item.key); setSidebarOpen(false); }}>
               {item.icon} {item.label}
             </button>
           ))}
@@ -203,9 +253,8 @@ const AdminDashboard = () => {
               <h2 style={{ fontWeight: 800, marginBottom: 24 }}>System Overview</h2>
               
               {/* Top Stats Grid */}
-              <div className="grid grid-4" style={{ marginBottom: 32 }}>
+              <div className="grid grid-3" style={{ marginBottom: 32 }}>
                 {[
-                  { label: 'Total Revenue', value: `₹${stats.totalRevenue || 0}`, icon: <span style={{fontSize: '1.2rem'}}>💰</span>, color: 'var(--success)' },
                   { label: 'Active Users', value: stats.totalUsers || 0, icon: <FiUsers />, color: 'var(--accent)' },
                   { label: 'Total Enrollments', value: stats.totalEnrollments || 0, icon: <FiEye />, color: 'var(--info)' },
                   { label: 'Active Batches', value: stats.activeBatches || 0, icon: <FiActivity />, color: 'var(--warning)' },
@@ -457,6 +506,202 @@ const AdminDashboard = () => {
             </div>
           )}
 
+          {/* DAILY MONITOR TAB */}
+          {tab === 'daily-monitor' && (
+            <div className="fade-in">
+              <h2 style={{ fontWeight: 800, marginBottom: 24 }}>Daily User Activity Monitor</h2>
+              <div style={{ marginBottom: 24, display: 'flex', gap: 16, alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Select Batch</label>
+                  <select className="form-input" value={selectedMonitorBatch} onChange={e => loadDailyMonitor(e.target.value)}>
+                    <option value="">Choose batch to monitor</option>
+                    {batches.map(b => <option key={b._id} value={b._id}>{b.title}</option>)}
+                  </select>
+                </div>
+                <button className="btn btn-primary" disabled={!selectedMonitorBatch || monitorLoading} onClick={() => loadDailyMonitor(selectedMonitorBatch)}>
+                  Refresh Data
+                </button>
+              </div>
+
+              {selectedMonitorBatch ? (
+                monitorLoading ? (
+                  <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
+                ) : (
+                  <div className="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>User</th>
+                          <th style={{ textAlign: 'center' }}>Stats</th>
+                          <th style={{ textAlign: 'center' }}>Steps</th>
+                          <th style={{ textAlign: 'center' }}>Meals</th>
+                          <th style={{ textAlign: 'center' }}>Status</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {monitorData.map((m, i) => (
+                          <tr key={i}>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                {m.user.avatar ? <img src={m.user.avatar} className="avatar" style={{ width: 32, height: 32 }} alt="" /> : <div className="avatar avatar-placeholder" style={{ width: 32, height: 32 }}>{m.user.name[0]}</div>}
+                                <div>
+                                  <div style={{ fontWeight: 600 }}>{m.user.name}</div>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{m.user.email}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <span className={`badge ${m.stats ? 'badge-success' : 'badge-warning'}`}>{m.stats ? '✓' : 'Pending'}</span>
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <span className={`badge ${m.steps ? 'badge-success' : 'badge-warning'}`}>{m.steps ? '✓' : 'Pending'}</span>
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <span className={`badge ${m.meals ? 'badge-success' : 'badge-warning'}`}>{m.meals ? '✓' : 'Pending'} ({m.mealsCount}/3)</span>
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              {m.isFullyCompleted ? (
+                                <span className="badge badge-teal" style={{ background: 'var(--success)', color: '#fff' }}>✓ Completed Today</span>
+                              ) : (
+                                <span className="badge badge-outline" style={{ opacity: 0.5 }}>Incomplete</span>
+                              )}
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                <button className="btn btn-sm btn-secondary" onClick={() => {
+                                  setSelectedMonitorDetail(m);
+                                  viewUserImages(m.user._id, selectedMonitorBatch);
+                                }}>
+                                  <FiEye /> View Details
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              ) : (
+                <div className="empty-state card">
+                  <FiActivity size={48} style={{ opacity: 0.2, marginBottom: 20 }} />
+                  <p>Select a batch above to monitor today's activity.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Today Detail Modal */}
+          {selectedMonitorDetail && (
+            <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setSelectedMonitorDetail(null)}>
+              <div className="modal" style={{ maxWidth: 800 }}>
+                <div className="modal-header">
+                  <h3 className="modal-title">Today's Details: {selectedMonitorDetail.user.name}</h3>
+                  <button className="modal-close" onClick={() => setSelectedMonitorDetail(null)}>×</button>
+                </div>
+                
+                <div style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: 8 }}>
+                  {/* Body Stats & Photos */}
+                  <div className="card" style={{ marginBottom: 20 }}>
+                    <h4 style={{ fontWeight: 700, marginBottom: 16 }}>📸 Body Stats & Photos</h4>
+                    {selectedMonitorDetail.measurement ? (
+                      <>
+                        <div className="grid grid-3" style={{ gap: 12, marginBottom: 20 }}>
+                          {['left', 'center', 'right'].map(side => (
+                            <div key={side}>
+                              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginBottom: 4, textTransform: 'capitalize' }}>{side}</p>
+                              {selectedMonitorDetail.measurement.images?.[side] ? (
+                                <div style={{ position: 'relative', group: 'image' }}>
+                                  <img src={selectedMonitorDetail.measurement.images[side]} alt="" style={{ width: '100%', borderRadius: 8, border: '1px solid var(--border)' }} />
+                                  <button 
+                                    className="btn-icon" 
+                                    style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.5)', color: '#fff', padding: 6, borderRadius: '50%' }}
+                                    onClick={() => downloadImage(selectedMonitorDetail.measurement.images[side], `${selectedMonitorDetail.user.name}_body_${side}.jpg`)}
+                                    title="Download"
+                                  >
+                                    <FiDownload size={14} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div style={{ width: '100%', height: 120, background: 'var(--bg-tertiary)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.7rem' }}>No Photo</div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10 }}>
+                          {Object.entries(selectedMonitorDetail.measurement).map(([k, v]) => {
+                            if (['images', 'userId', 'batchId', '_id', '__v', 'date', 'stepsCount', 'stepsImage'].includes(k)) return null;
+                            if (!v) return null;
+                            return (
+                              <div key={k} style={{ padding: '8px 12px', background: 'var(--bg-tertiary)', borderRadius: 8 }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</div>
+                                <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{v}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : <p style={{ color: 'var(--text-muted)' }}>No measurements logged yet.</p>}
+                  </div>
+
+                  {/* Steps */}
+                  <div className="card" style={{ marginBottom: 20 }}>
+                    <h4 style={{ fontWeight: 700, marginBottom: 16 }}>🚶 Walking Steps</h4>
+                    {selectedMonitorDetail.measurement?.stepsCount ? (
+                      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                        {selectedMonitorDetail.measurement.stepsImage && (
+                          <div style={{ position: 'relative' }}>
+                            <img src={selectedMonitorDetail.measurement.stepsImage} alt="" style={{ width: 120, borderRadius: 8 }} />
+                            <button 
+                              className="btn-icon" 
+                              style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', color: '#fff', padding: 4, borderRadius: '50%' }}
+                              onClick={() => downloadImage(selectedMonitorDetail.measurement.stepsImage, `${selectedMonitorDetail.user.name}_steps.jpg`)}
+                            >
+                              <FiDownload size={12} />
+                            </button>
+                          </div>
+                        )}
+                        <div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)' }}>{selectedMonitorDetail.measurement.stepsCount}</div>
+                          <p style={{ color: 'var(--text-muted)' }}>Steps logged today</p>
+                        </div>
+                      </div>
+                    ) : <p style={{ color: 'var(--text-muted)' }}>No steps logged yet.</p>}
+                  </div>
+
+                  {/* Meals */}
+                  <div className="card">
+                    <h4 style={{ fontWeight: 700, marginBottom: 16 }}>🍱 Meal Logs</h4>
+                    {selectedMonitorDetail.mealLog?.meals?.length > 0 ? (
+                      <div className="grid grid-3" style={{ gap: 12 }}>
+                        {selectedMonitorDetail.mealLog.meals.map((meal, i) => (
+                          <div key={i} style={{ background: 'var(--bg-tertiary)', borderRadius: 12, padding: 12, position: 'relative' }}>
+                            {meal.image && (
+                              <div style={{ position: 'relative' }}>
+                                <img src={meal.image} alt="" style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }} />
+                                <button 
+                                  className="btn-icon" 
+                                  style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', color: '#fff', padding: 4, borderRadius: '50%' }}
+                                  onClick={() => downloadImage(meal.image, `${selectedMonitorDetail.user.name}_meal_${meal.type}.jpg`)}
+                                >
+                                  <FiDownload size={12} />
+                                </button>
+                              </div>
+                            )}
+                            <div className="badge badge-teal" style={{ marginBottom: 8, textTransform: 'capitalize' }}>{meal.type}</div>
+                            <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{meal.description}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>{meal.calories} cal • {meal.time}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : <p style={{ color: 'var(--text-muted)' }}>No meals logged yet.</p>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* MESSAGES TAB */}
           {tab === 'messages' && (
             <div className="fade-in">
@@ -647,100 +892,196 @@ const AdminDashboard = () => {
                   <button className="modal-close" onClick={() => setUserImages(null)}>×</button>
                 </div>
 
-                {(!userImages.dayWiseData || userImages.dayWiseData.length === 0) ? (
+                {/* Compliance Calendar Section */}
+                {userImages.complianceData && (
+                  <div className="card" style={{ marginBottom: 24, padding: 20, background: 'var(--bg-secondary)' }}>
+                    <h4 style={{ fontWeight: 700, marginBottom: 16, fontSize: '0.9rem', color: 'var(--text-main)' }}>Discipline Calendar</h4>
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(32px, 1fr))', 
+                      gap: 8 
+                    }}>
+                      {userImages.complianceData.map((d, i) => {
+                        let bgColor = 'var(--bg-tertiary)';
+                        let tooltip = `Day ${d.day}: ${d.date} - Not yet uploaded`;
+                        
+                        if (d.isFull) {
+                          bgColor = 'var(--success)';
+                          tooltip = `Day ${d.day}: ${d.date} - All Tasks Completed!`;
+                        } else if (d.isPast) {
+                          bgColor = 'var(--danger)';
+                          tooltip = `Day ${d.day}: ${d.date} - MISSED TASKS`;
+                        } else if (d.isToday) {
+                          bgColor = '#9ca3af'; // Grey for today if incomplete
+                          tooltip = `Day ${d.day}: Today - Progressing...`;
+                        }
+
+                        return (
+                          <div 
+                            key={i} 
+                            title={tooltip}
+                            onClick={() => setActiveModalDay(d)}
+                            style={{ 
+                              aspectRatio: '1',
+                              background: bgColor,
+                              borderRadius: 4,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.65rem',
+                              color: d.isFull || d.isPast ? '#fff' : 'var(--text-muted)',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              border: activeModalDay?.date === d.date ? '2px solid #fff' : (d.isToday ? '2px solid var(--accent)' : 'none'),
+                              boxShadow: activeModalDay?.date === d.date ? '0 0 10px rgba(255,255,255,0.5)' : 'none',
+                              opacity: d.isPast || d.isFull || d.isToday ? 1 : 0.3,
+                              transform: activeModalDay?.date === d.date ? 'scale(1.1)' : 'scale(1)',
+                              transition: '0.2s'
+                            }}
+                          >
+                            {d.day}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ display: 'flex', gap: 16, marginTop: 16, fontSize: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 12, height: 12, background: 'var(--success)', borderRadius: 2 }} /> Completed</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 12, height: 12, background: 'var(--danger)', borderRadius: 2 }} /> Missed</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 12, height: 12, background: '#9ca3af', borderRadius: 2 }} /> Today</div>
+                    </div>
+                  </div>
+                )}
+
+                {activeModalDay ? (
+                  <div className="fade-in">
+                    <div style={{ marginBottom: 20, padding: '12px 16px', background: 'var(--bg-tertiary)', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h4 style={{ fontWeight: 700, margin: 0 }}>
+                        📅 Day {activeModalDay.day} Details ({new Date(activeModalDay.date).toLocaleDateString()})
+                      </h4>
+                      {activeModalDay.isFull ? (
+                        <span className="badge badge-success">✓ Fully Completed</span>
+                      ) : (
+                        <span className="badge badge-warning">⚠️ Incomplete</span>
+                      )}
+                    </div>
+
+                    {activeModalDay.details ? (
+                      <div style={{ maxHeight: '50vh', overflowY: 'auto', paddingRight: 8 }}>
+                        {/* Body Stats & Photos */}
+                        <div className="card" style={{ marginBottom: 20 }}>
+                          <h4 style={{ fontWeight: 700, marginBottom: 16 }}>📸 Body Stats & Photos</h4>
+                          {activeModalDay.details.bodyImages?.length > 0 ? (
+                            <>
+                              <div className="grid grid-3" style={{ gap: 12, marginBottom: 20 }}>
+                                {['left', 'center', 'right'].map(side => (
+                                  <div key={side}>
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginBottom: 4, textTransform: 'capitalize' }}>{side === 'center' ? 'Front' : side + ' Side'}</p>
+                                    {activeModalDay.details.bodyImages[0][side] ? (
+                                      <div style={{ position: 'relative' }}>
+                                        <img src={activeModalDay.details.bodyImages[0][side]} alt="" style={{ width: '100%', borderRadius: 8, border: '1px solid var(--border)' }} />
+                                        <button 
+                                          className="btn-icon" 
+                                          style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.5)', color: '#fff', padding: 6, borderRadius: '50%' }}
+                                          onClick={() => downloadImage(activeModalDay.details.bodyImages[0][side], `${selectedMonitorDetail.user.name}_day${activeModalDay.day}_${side}.jpg`)}
+                                        >
+                                          <FiDownload size={14} />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div style={{ width: '100%', height: 120, background: 'var(--bg-tertiary)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.7rem' }}>No Photo</div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10 }}>
+                                {Object.entries(activeModalDay.details.bodyImages[0]).map(([k, v]) => {
+                                  if (['left', 'right', 'center', 'id', '_id'].includes(k)) return null;
+                                  if (v === undefined || v === null || v === '') return null;
+                                  
+                                  const label = k.replace(/([A-Z])/g, ' $1');
+                                  const unit = k === 'weight' ? 'kg' : 'cm';
+
+                                  return (
+                                    <div key={k} style={{ padding: '8px 12px', background: 'var(--bg-tertiary)', borderRadius: 8 }}>
+                                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{label}</div>
+                                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{v} <span style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.7 }}>{unit}</span></div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          ) : <p style={{ color: 'var(--text-muted)' }}>No measurements logged for this day.</p>}
+                        </div>
+
+                        {/* Steps */}
+                        <div className="card" style={{ marginBottom: 20 }}>
+                          <h4 style={{ fontWeight: 700, marginBottom: 16 }}>🚶 Walking Steps</h4>
+                          {activeModalDay.details.steps?.count ? (
+                            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                              {activeModalDay.details.steps.image && (
+                                <div style={{ position: 'relative' }}>
+                                  <img src={activeModalDay.details.steps.image} alt="" style={{ width: 120, borderRadius: 8 }} />
+                                  <button 
+                                    className="btn-icon" 
+                                    style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', color: '#fff', padding: 4, borderRadius: '50%' }}
+                                    onClick={() => downloadImage(activeModalDay.details.steps.image, `${selectedMonitorDetail.user.name}_day${activeModalDay.day}_steps.jpg`)}
+                                  >
+                                    <FiDownload size={12} />
+                                  </button>
+                                </div>
+                              )}
+                              <div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)' }}>{activeModalDay.details.steps.count}</div>
+                                <p style={{ color: 'var(--text-muted)' }}>Steps logged</p>
+                              </div>
+                            </div>
+                          ) : <p style={{ color: 'var(--text-muted)' }}>No steps logged for this day.</p>}
+                        </div>
+
+                        {/* Meals */}
+                        <div className="card">
+                          <h4 style={{ fontWeight: 700, marginBottom: 16 }}>🍱 Meal Logs</h4>
+                          {activeModalDay.details.meals?.length > 0 ? (
+                            <div className="grid grid-3" style={{ gap: 12 }}>
+                              {activeModalDay.details.meals.map((meal, i) => (
+                                <div key={i} style={{ background: 'var(--bg-tertiary)', borderRadius: 12, padding: 12, position: 'relative' }}>
+                                  {meal.image && (
+                                    <div style={{ position: 'relative' }}>
+                                      <img src={meal.image} alt="" style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }} />
+                                      <button 
+                                        className="btn-icon" 
+                                        style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', color: '#fff', padding: 4, borderRadius: '50%' }}
+                                        onClick={() => downloadImage(meal.image, `${selectedMonitorDetail.user.name}_day${activeModalDay.day}_meal.jpg`)}
+                                      >
+                                        <FiDownload size={12} />
+                                      </button>
+                                    </div>
+                                  )}
+                                  <div className="badge badge-teal" style={{ marginBottom: 8, textTransform: 'capitalize' }}>{meal.type}</div>
+                                  <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{meal.description}</div>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>{meal.calories} cal</div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : <p style={{ color: 'var(--text-muted)' }}>No meals logged for this day.</p>}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="empty-state card" style={{ padding: 40 }}>
+                        <div style={{ fontSize: '3rem', marginBottom: 16, opacity: 0.2 }}>📉</div>
+                        <h3>No Data for Day {activeModalDay.day}</h3>
+                        <p>The user did not log any activity for this specific date.</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
                   <div className="empty-state" style={{ padding: 40 }}>
                     <div className="empty-state-icon">📷</div>
                     <h3>No uploads yet</h3>
                     <p>This user hasn't uploaded any images or meals yet.</p>
                   </div>
-                ) : (
-                  userImages.dayWiseData.map((day) => (
-                    <div key={day.date} className="card" style={{ marginBottom: 16 }}>
-                      {/* Day header */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid var(--border-color)' }}>
-                        <div>
-                          <h4 style={{ fontWeight: 700, fontSize: '1rem' }}>
-                            📆 {new Date(day.date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                          </h4>
-                          {day.batch && <span className="badge badge-teal" style={{ marginTop: 4 }}>{day.batch}</span>}
-                        </div>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          {day.bodyImages.length > 0 && <span className="badge badge-success">📸 Body</span>}
-                          {day.meals.length > 0 && <span className="badge badge-warning">🍽️ {day.meals.length} meals</span>}
-                          {day.steps && <span className="badge badge-teal">🚶 {day.steps.count} steps</span>}
-                        </div>
-                      </div>
-
-                      {/* Steps for this day */}
-                      {day.steps && (
-                        <div style={{ marginBottom: 12, display: 'flex', gap: 16, alignItems: 'center', background: 'rgba(13, 148, 136, 0.05)', padding: 12, borderRadius: 10 }}>
-                          {day.steps.image && (
-                            <img src={day.steps.image} alt="steps proof" style={{ width: 80, height: 100, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border-color)' }} />
-                          )}
-                          <div>
-                            <p style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--accent)' }}>🚶 {day.steps.count} Steps</p>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Daily walking goal proof</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Body images for this day */}
-                      {day.bodyImages.length > 0 && (
-                        <div style={{ marginBottom: 12 }}>
-                          <p style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 8 }}>Body Progress</p>
-                          {day.bodyImages.map((bi, idx) => (
-                            <div key={idx}>
-                              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}>
-                                {bi.left && (
-                                  <div style={{ textAlign: 'center' }}>
-                                    <img src={bi.left} alt="Left" style={{ width: 140, height: 180, objectFit: 'cover', borderRadius: 10, border: '2px solid var(--border-color)' }} />
-                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Left Side</p>
-                                  </div>
-                                )}
-                                {bi.center && (
-                                  <div style={{ textAlign: 'center' }}>
-                                    <img src={bi.center} alt="Center" style={{ width: 140, height: 180, objectFit: 'cover', borderRadius: 10, border: '2px solid var(--border-color)' }} />
-                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Front</p>
-                                  </div>
-                                )}
-                                {bi.right && (
-                                  <div style={{ textAlign: 'center' }}>
-                                    <img src={bi.right} alt="Right" style={{ width: 140, height: 180, objectFit: 'cover', borderRadius: 10, border: '2px solid var(--border-color)' }} />
-                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Right Side</p>
-                                  </div>
-                                )}
-                              </div>
-                              {(bi.weight || bi.chest || bi.belly) && (
-                                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                                  {bi.weight > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>⚖️ {bi.weight} kg</span>}
-                                  {bi.chest > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>📏 Chest: {bi.chest} cm</span>}
-                                  {bi.belly > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>📏 Belly: {bi.belly} cm</span>}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Meal images for this day */}
-                      {day.meals.length > 0 && (
-                        <div>
-                          <p style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 8 }}>Meals</p>
-                          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                            {day.meals.map((meal, mi) => (
-                              <div key={mi} style={{ background: 'var(--bg-tertiary)', borderRadius: 10, padding: 8, width: 150 }}>
-                                {meal.image && <img src={meal.image} alt={meal.type} style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8, marginBottom: 6 }} />}
-                                <p style={{ fontWeight: 600, fontSize: '0.8rem', textTransform: 'capitalize' }}>{meal.type}</p>
-                                {meal.description && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meal.description}</p>}
-                                {meal.calories > 0 && <span className="badge badge-teal" style={{ marginTop: 4 }}>{meal.calories} cal</span>}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
                 )}
+
               </div>
             </div>
           )}

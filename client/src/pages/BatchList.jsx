@@ -36,7 +36,7 @@ const BatchList = () => {
                   </h2>
                   <div className="grid grid-3">
                     {batches.filter(b => b.isEnrolled).map((b, i) => (
-                      <div key={b._id} className="card fade-in" style={{ animationDelay: `${i * 0.1}s`, overflow: 'hidden', padding: 0, border: '2px solid var(--accent)' }}>
+                      <div key={b._id} className="card card-interactive fade-in" style={{ animationDelay: `${i * 0.1}s`, overflow: 'hidden', padding: 0, border: '2px solid var(--accent)' }}>
                         <div style={{ height: 160, background: 'var(--gradient-hero)', position: 'relative' }}>
                           {b.thumbnailUrl ? <img src={b.thumbnailUrl} alt={b.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> :
                             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem' }}>🏋️</div>}
@@ -63,7 +63,7 @@ const BatchList = () => {
               </h2>
               <div className="grid grid-3">
                 {batches.filter(b => !b.isEnrolled).map((b, i) => (
-                  <div key={b._id} className="card fade-in" style={{ animationDelay: `${i * 0.1}s`, overflow: 'hidden', padding: 0 }}>
+                  <div key={b._id} className="card card-interactive fade-in" style={{ animationDelay: `${i * 0.1}s`, overflow: 'hidden', padding: 0 }}>
                     <div style={{ height: 180, background: 'var(--gradient-hero)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {b.thumbnailUrl ? <img src={b.thumbnailUrl} alt={b.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> :
                         <span style={{ fontSize: '3rem' }}>🏋️</span>}

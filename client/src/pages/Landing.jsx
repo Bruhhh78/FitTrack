@@ -1,5 +1,6 @@
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiTarget, FiTrendingUp, FiCamera, FiAward, FiCheckCircle, FiZap } from 'react-icons/fi';
+import { FiTarget, FiTrendingUp, FiCamera, FiAward, FiCheckCircle, FiZap, FiArrowRight } from 'react-icons/fi';
 import { GiMeal, GiMuscleUp } from 'react-icons/gi';
 import Footer from '../components/Footer';
 
@@ -12,82 +13,84 @@ const features = [
   { icon: <GiMuscleUp />, title: 'Exercise Plans', desc: 'Access curated exercise routines, videos, and PDF guides.' },
 ];
 
-const Landing = () => (
-  <div>
-    {/* Hero */}
-    <section className="hero">
-      <div className="container">
-        <div className="hero-content fade-in">
-          <div className="badge badge-teal" style={{ marginBottom: 16 }}>🔥 Transform Your Life</div>
-          <h1>Your <span>Weight Loss</span> Journey Starts Here</h1>
-          <p>Join our structured programs with expert guidance, daily tracking, meal management, and streak-based challenges. See real results with accountability.</p>
-          <div className="hero-buttons">
-            <Link to="/register" className="btn btn-primary btn-lg">Start Your Journey</Link>
-            <Link to="/batches" className="btn btn-secondary btn-lg" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.3)' }}>View Programs</Link>
-          </div>
-          <div className="hero-stats">
-            <div className="hero-stat"><div className="hero-stat-value">500+</div><div className="hero-stat-label">Transformations</div></div>
-            <div className="hero-stat"><div className="hero-stat-value">95%</div><div className="hero-stat-label">Success Rate</div></div>
-            <div className="hero-stat"><div className="hero-stat-value">21+</div><div className="hero-stat-label">Day Programs</div></div>
-          </div>
-        </div>
-      </div>
-    </section>
+const Landing = () => {
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add('animate-reveal');
+      });
+    }, { threshold: 0.1 });
 
-    {/* Features */}
-    <section className="section">
-      <div className="container">
-        <h2 className="section-title">Everything You Need to <span style={{ color: 'var(--accent)' }}>Succeed</span></h2>
-        <p className="section-subtitle">Comprehensive tools and features designed to make your weight loss journey effective and enjoyable.</p>
-        <div className="grid grid-3">
-          {features.map((f, i) => (
-            <div key={i} className="card feature-card fade-in" style={{ animationDelay: `${i * 0.1}s` }}>
-              <div className="feature-icon">{f.icon}</div>
-              <h3>{f.title}</h3>
-              <p>{f.desc}</p>
+    document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div className="landing-page">
+      {/* Hero */}
+      <section className="hero">
+        <div className="container">
+          <div className="hero-content animate-fade">
+            <div className="badge" style={{ marginBottom: 20 }}>🚀 Your transformation starts here</div>
+            <h1>Transform Your Body <br/> <span style={{ color: 'var(--primary)' }}>Empower Your Life</span></h1>
+            <p>FitTrack is your ultimate weight loss companion. Join structured programs, track every meal, and build lasting habits with our guided streak system.</p>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <Link to="/register" className="btn btn-primary btn-lg">Get Started Free</Link>
+              <Link to="/batches" className="btn btn-outline btn-lg">Browse Programs</Link>
             </div>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    {/* How it works */}
-    <section className="section" style={{ background: 'var(--bg-tertiary)' }}>
-      <div className="container">
-        <h2 className="section-title">How It Works</h2>
-        <p className="section-subtitle">Get started in 4 simple steps</p>
-        <div className="grid grid-4">
-          {[
-            { step: '01', title: 'Sign Up', desc: 'Create your account with Google or email' },
-            { step: '02', title: 'Choose a Program', desc: 'Pick from our curated weight loss batches' },
-            { step: '03', title: 'Submit Measurements', desc: 'Enter body measurements & upload progress photos' },
-            { step: '04', title: 'Track Daily', desc: 'Log meals, complete exercises, build streaks' },
-          ].map((s, i) => (
-            <div key={i} className="card fade-in" style={{ textAlign: 'center', animationDelay: `${i * 0.1}s` }}>
-              <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--accent)', opacity: 0.3, marginBottom: 8 }}>{s.step}</div>
-              <h3 style={{ marginBottom: 8 }}>{s.title}</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{s.desc}</p>
+            
+            <div style={{ display: 'flex', gap: 40, marginTop: 60, marginBottom: 40, flexWrap: 'wrap' }}>
+              <div><div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)' }}>500+</div><div style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Users Transformed</div></div>
+              <div style={{ width: 1, background: 'var(--glass-border)', height: 50 }}></div>
+              <div><div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)' }}>21+</div><div style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Day Challenges</div></div>
+              <div style={{ width: 1, background: 'var(--glass-border)', height: 50 }}></div>
+              <div><div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)' }}>98%</div><div style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Success Rate</div></div>
             </div>
-          ))}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    {/* CTA */}
-    <section className="section" style={{ background: 'var(--gradient-hero)', textAlign: 'center', padding: '80px 0' }}>
-      <div className="container">
-        <h2 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff', marginBottom: 16 }}>Ready to Transform?</h2>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.1rem', marginBottom: 32, maxWidth: 500, margin: '0 auto 32px' }}>
-          Join hundreds of people who have already started their weight loss journey with FitTrack.
-        </p>
-        <Link to="/register" className="btn btn-primary btn-lg" style={{ background: '#fff', color: 'var(--teal-800)' }}>
-          <FiZap /> Get Started Free
-        </Link>
-      </div>
-    </section>
+      {/* Features */}
+      <section className="section" style={{ background: 'var(--bg-dark)' }}>
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: 60 }} className="reveal-on-scroll">
+            <h2 style={{ fontSize: '2.5rem', marginBottom: 16 }}>Everything You Need To <span style={{ color: 'var(--primary)' }}>Succeed</span></h2>
+            <p style={{ color: 'var(--text-dim)', maxWidth: 600, margin: '0 auto' }}>We provide the tools, the plan, and the community. You bring the consistency.</p>
+          </div>
+          
+          <div className="grid grid-3">
+            {features.map((f, i) => (
+              <div key={i} className="card card-interactive reveal-on-scroll" style={{ transitionDelay: `${i * 0.1}s` }}>
+                <div className="stat-icon" style={{ marginBottom: 24, width: 60, height: 60, fontSize: '1.6rem' }}>{f.icon}</div>
+                <h3 style={{ marginBottom: 12 }}>{f.title}</h3>
+                <p style={{ color: 'var(--text-dim)', fontSize: '0.95rem' }}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-    <Footer />
-  </div>
-);
+      {/* Warm CTA */}
+      <section className="section">
+        <div className="container">
+          <div className="card reveal-on-scroll" style={{ 
+            textAlign: 'center', 
+            padding: '80px 40px',
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(249, 115, 22, 0.05) 100%)',
+            borderColor: 'var(--primary-glow)'
+          }}>
+            <h2 style={{ fontSize: '3rem', marginBottom: 24 }}>Ready to Level Up?</h2>
+            <p style={{ fontSize: '1.2rem', color: 'var(--text-dim)', marginBottom: 40, maxWidth: 600, margin: '0 auto 40px' }}>
+              Join FitTrack today and start your journey towards a healthier, more confident version of yourself.
+            </p>
+            <Link to="/register" className="btn btn-primary btn-lg">Start Your 21-Day Challenge</Link>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+    </div>
+  );
+};
 
 export default Landing;

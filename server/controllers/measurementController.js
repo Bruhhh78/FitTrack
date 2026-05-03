@@ -10,9 +10,9 @@ const addMeasurement = async (req, res) => {
     
     // Set search range for the entire day (local time)
     const startOfDay = new Date(searchDate);
-    startOfDay.setHours(0, 0, 0, 0);
+    startOfDay.setUTCHours(0, 0, 0, 0);
     const endOfDay = new Date(searchDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    endOfDay.setUTCHours(23, 59, 59, 999);
 
     let measurement = await Measurement.findOne({
       userId: req.user._id,
@@ -92,6 +92,17 @@ const getLatestMeasurement = async (req, res) => {
   }
 };
 
+const getTodayMeasurement = async (req, res) => {
+  try {
+    const { date } = req.query;
+    const searchDate = date ? new Date(date) : new Date();
+    const start = new Date(searchDate); start.setUTCHours(0,0,0,0);
+    const end = new Date(searchDate); end.setUTCHours(23,59,59,999);
+    const measurement = await Measurement.findOne({ userId: req.user._id, batchId: req.params.batchId, date: { $gte: start, $lte: end } });
+    res.json({ success: true, measurement });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
 // @desc    Update measurement
 // @route   PUT /api/measurements/:id
 const updateMeasurement = async (req, res) => {
@@ -141,6 +152,7 @@ module.exports = {
   addMeasurement,
   getMeasurementsByBatch,
   getLatestMeasurement,
+  getTodayMeasurement,
   updateMeasurement,
   uploadBodyImages,
 };

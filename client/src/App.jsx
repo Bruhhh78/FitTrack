@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard';
 import MeasurementForm from './pages/MeasurementForm';
 import MealTracker from './pages/MealTracker';
 import StreakDashboard from './pages/StreakDashboard';
+import DailyActivity from './pages/DailyActivity';
 
 import Learn from './pages/Learn';
 import Messenger from './pages/Messenger';
@@ -37,6 +38,7 @@ function App() {
         <Route path="/learn/:batchId" element={<ProtectedRoute><Learn /></ProtectedRoute>} />
         <Route path="/measurements/:batchId" element={<ProtectedRoute><MeasurementForm /></ProtectedRoute>} />
         <Route path="/meals/:batchId" element={<ProtectedRoute><MealTracker /></ProtectedRoute>} />
+        <Route path="/daily/:batchId" element={<ProtectedRoute><DailyActivity /></ProtectedRoute>} />
         <Route path="/streak/:batchId" element={<ProtectedRoute><StreakDashboard /></ProtectedRoute>} />
         <Route path="/messenger" element={<ProtectedRoute><Messenger /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />

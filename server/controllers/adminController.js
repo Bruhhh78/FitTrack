@@ -79,12 +79,18 @@ const getUserImages = async (req, res) => {
       const dayKey = new Date(m.date).toISOString().split('T')[0];
       if (!dayMap[dayKey]) dayMap[dayKey] = { date: dayKey, bodyImages: [], meals: [], steps: null, batch: m.batchId?.title || '' };
       dayMap[dayKey].bodyImages.push({
-        left: m.images?.left || '',
-        right: m.images?.right || '',
-        center: m.images?.center || '',
-        weight: m.weight,
-        belly: m.belly,
+        ...m.toObject().images,
+        face: m.face,
+        neck: m.neck,
         chest: m.chest,
+        armsLeft: m.armsLeft,
+        armsRight: m.armsRight,
+        belly: m.belly,
+        hips: m.hips,
+        thighsLeft: m.thighsLeft,
+        thighsRight: m.thighsRight,
+        weight: m.weight,
+        id: m._id
       });
       if (m.stepsCount || m.stepsImage) {
         dayMap[dayKey].steps = { count: m.stepsCount, image: m.stepsImage };
@@ -98,10 +104,51 @@ const getUserImages = async (req, res) => {
       });
     });
 
-    // Sort days descending
+    // Get enrollment for duration and start date
+    const enrollment = await Enrollment.findOne({ userId, batchId: batchId || { $ne: null } })
+      .populate('batchId', 'duration durationType enrolledAt')
+      .sort({ enrolledAt: -1 });
+
+    let complianceData = [];
+    if (enrollment && enrollment.batchId) {
+      const startDate = new Date(enrollment.enrolledAt || enrollment.createdAt);
+      startDate.setHours(0,0,0,0);
+      const duration = enrollment.batchId.duration || 30;
+      
+      for (let i = 0; i < duration; i++) {
+        const currentDay = new Date(startDate);
+        currentDay.setDate(startDate.getDate() + i);
+        const dayKey = currentDay.toISOString().split('T')[0];
+        const log = dayMap[dayKey];
+        
+        const isPast = currentDay < new Date().setHours(0,0,0,0);
+        const isToday = dayKey === new Date().toISOString().split('T')[0];
+        
+        const statsDone = log && log.bodyImages.length > 0;
+        const stepsDone = log && log.steps?.count > 0;
+        const mealsDone = log && log.meals?.length >= 3;
+        
+        complianceData.push({
+          day: i + 1,
+          date: dayKey,
+          isFull: !!(statsDone && stepsDone && mealsDone),
+          isPast,
+          isToday,
+          details: log || null
+        });
+      }
+    }
+
+    // Sort days descending for the list, but we'll use complianceData for the calendar
     const dayWiseData = Object.values(dayMap).sort((a, b) => b.date.localeCompare(a.date));
 
-    res.json({ success: true, dayWiseData, totalDays: dayWiseData.length });
+    res.json({ 
+      success: true, 
+      dayWiseData, 
+      complianceData,
+      totalDays: dayWiseData.length,
+      duration: enrollment?.batchId?.duration || 0
+    });
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
@@ -167,6 +214,51 @@ const generateToken = async (req, res) => {
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
+const getDailyMonitor = async (req, res) => {
+  try {
+    const { batchId } = req.params;
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const enrollments = await Enrollment.find({ batchId, status: 'active' })
+      .populate('userId', 'name email avatar phone');
+
+    const monitorData = await Promise.all(enrollments.map(async e => {
+      const measurement = await Measurement.findOne({
+        userId: e.userId._id,
+        batchId,
+        date: { $gte: startOfDay, $lte: endOfDay }
+      });
+
+      const mealLog = await MealLog.findOne({
+        userId: e.userId._id,
+        batchId,
+        date: { $gte: startOfDay, $lte: endOfDay }
+      });
+
+      const hasStats = !!(measurement && measurement.images?.left && measurement.images?.right && measurement.images?.center);
+      const hasSteps = !!(measurement && measurement.stepsCount > 0);
+      const mealsCount = mealLog?.meals?.length || 0;
+      const hasMeals = mealsCount >= 3;
+
+      return {
+        user: e.userId,
+        stats: hasStats,
+        steps: hasSteps,
+        meals: hasMeals,
+        mealsCount,
+        isFullyCompleted: hasStats && hasSteps && hasMeals,
+        measurement,
+        mealLog
+      };
+    }));
+
+    res.json({ success: true, monitorData });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
 module.exports = { 
   getDashboardStats, 
   getAllUsers, 
@@ -174,5 +266,6 @@ module.exports = {
   getUserImages, 
   getUserProgress,
   allotBatch,
-  generateToken
+  generateToken,
+  getDailyMonitor
 };
