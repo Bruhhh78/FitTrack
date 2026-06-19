@@ -3,12 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FiUser, FiMail, FiLock, FiPhone, FiCheckCircle } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
+import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 
 const Register = () => {
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' });
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -26,13 +27,23 @@ const Register = () => {
     } finally { setLoading(false); }
   };
 
+  const handleGoogleSuccess = async (response) => {
+    try {
+      const data = await googleLogin(response.credential);
+      toast.success('Welcome back!');
+      navigate(data.user.role === 'admin' ? '/admin' : '/batches');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Google login failed');
+    }
+  };
+
   return (
     <div className="auth-page" style={{ 
       minHeight: '100vh', 
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center',
-      padding: '40px 20px',
+      padding: '100px 20px 40px',
       background: 'radial-gradient(circle at top right, rgba(245, 158, 11, 0.05), transparent), radial-gradient(circle at bottom left, rgba(249, 115, 22, 0.05), transparent)'
     }}>
       <div className="card animate-fade" style={{ width: '100%', maxWidth: '480px', padding: '40px' }}>
@@ -41,9 +52,15 @@ const Register = () => {
           <p style={{ color: 'var(--text-dim)' }}>Join FitTrack and start your 21-day journey</p>
         </div>
 
-        <button className="btn btn-outline" onClick={() => window.location.href = '/api/auth/google'} style={{ width: '100%', marginBottom: '24px', display: 'flex', justifyContent: 'center', background: 'rgba(255,255,255,0.02)' }}>
-          <FcGoogle size={20} style={{ marginRight: 10 }} /> Register with Google
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => toast.error('Google Login Failed')}
+            theme="filled_black"
+            shape="pill"
+            width="100%"
+          />
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
           <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }}></div>

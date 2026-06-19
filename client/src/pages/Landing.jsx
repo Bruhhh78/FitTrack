@@ -35,7 +35,7 @@ const Landing = () => {
             <h1>Transform Your Body <br/> <span style={{ color: 'var(--primary)' }}>Empower Your Life</span></h1>
             <p>FitTrack is your ultimate weight loss companion. Join structured programs, track every meal, and build lasting habits with our guided streak system.</p>
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <Link to="/register" className="btn btn-primary btn-lg">Get Started Free</Link>
+              <Link to="/auth" className="btn btn-primary btn-lg">Get Started Free</Link>
               <Link to="/batches" className="btn btn-outline btn-lg">Browse Programs</Link>
             </div>
             
@@ -83,7 +83,7 @@ const Landing = () => {
             <p style={{ fontSize: '1.2rem', color: 'var(--text-dim)', marginBottom: 40, maxWidth: 600, margin: '0 auto 40px' }}>
               Join FitTrack today and start your journey towards a healthier, more confident version of yourself.
             </p>
-            <Link to="/register" className="btn btn-primary btn-lg">Start Your 21-Day Challenge</Link>
+            <Link to="/auth" className="btn btn-primary btn-lg">Start Your 21-Day Challenge</Link>
           </div>
         </div>
       </section>

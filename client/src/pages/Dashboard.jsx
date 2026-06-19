@@ -204,7 +204,7 @@ const Dashboard = () => {
                       </div>
 
                       {/* Steps Status */}
-                      <div style={{ textAlign: 'center', borderLeft: '1px solid var(--glass-border)', borderRight: '1px solid var(--glass-border)' }}>
+                      <div className="dashboard-summary-item mobile-border-none" style={{ textAlign: 'center', borderLeft: '1px solid var(--glass-border)', borderRight: '1px solid var(--glass-border)' }}>
                         <div style={{ fontSize: '2rem', marginBottom: 12 }}>🚶</div>
                         <h4 style={{ marginBottom: 8 }}>Walking Steps</h4>
                         {todayStats?.stepsCount ? (
@@ -241,7 +241,7 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 24, marginBottom: 0, alignItems: 'start' }}>
+                <div className="dashboard-bottom-grid" style={{ marginBottom: 0 }}>
                   {selectedEnrollment.batchId?.guideLink && (
                     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                       <div className="video-container" style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>

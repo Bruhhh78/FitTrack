@@ -6,6 +6,14 @@ import { FiUsers, FiPackage, FiActivity, FiPlus, FiEdit2, FiTrash2, FiEye, FiIma
 import CurriculumManager from '../../components/admin/CurriculumManager';
 import Chat from '../../components/Chat';
 
+const AvatarWithFallback = ({ src, name, size = 32 }) => {
+  const [error, setError] = useState(false);
+  if (!error && src) {
+    return <img src={src} className="avatar" style={{ width: size, height: size, objectFit: 'cover', borderRadius: '50%' }} alt={name} onError={() => setError(true)} />;
+  }
+  return <div className="avatar avatar-placeholder" style={{ width: size, height: size, fontSize: size * 0.4, display: 'flex', alignItems: 'center', justifyCenter: 'center' }}>{name?.[0] || '?'}</div>;
+};
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState('dashboard');
@@ -73,7 +81,10 @@ const AdminDashboard = () => {
   const loadEnrollments = (batchId) => {
     setSelectedBatch(batchId);
     setTab('enrollments');
-    api.get(`/admin/enrollments/${batchId}`).then(r => setEnrollments(r.data.enrollments));
+    api.get(`/admin/enrollments/${batchId}`).then(r => {
+      console.log('Fetched Enrollments:', r.data.enrollments);
+      setEnrollments(r.data.enrollments);
+    });
   };
 
   const editBatch = (batch) => {
@@ -139,6 +150,26 @@ const AdminDashboard = () => {
     } catch { toast.error('Failed'); }
   };
 
+  const handleCleanup = async () => {
+    if (!confirm('This will delete all enrollments linked to users that no longer exist. Continue?')) return;
+    try {
+      const { data } = await api.post('/admin/cleanup-enrollments');
+      toast.success(`Cleaned up ${data.count} orphaned records!`);
+      if (selectedBatch) loadEnrollments(selectedBatch);
+    } catch {
+      toast.error('Cleanup failed');
+    }
+  };
+
+  const handleSendManualEmail = async (userId, type) => {
+    try {
+      await api.post('/admin/send-manual-email', { userId, type });
+      toast.success(`Email (${type}) sent successfully!`);
+    } catch {
+      toast.error('Failed to send email');
+    }
+  };
+
   const handleAllotBatch = async (e) => {
     e.preventDefault();
     try {
@@ -146,7 +177,10 @@ const AdminDashboard = () => {
       toast.success('Batch alloted successfully!');
       setShowAllotModal(false);
       setAllotForm({ batchId: '' });
-      // Refresh enrollments or users if needed
+      // Refresh enrollments if we are currently looking at that batch
+      if (selectedBatch === allotForm.batchId) {
+        loadEnrollments(selectedBatch);
+      }
       const u = await api.get('/admin/users');
       setUsers(u.data.users);
     } catch (err) {
@@ -225,7 +259,6 @@ const AdminDashboard = () => {
         <button 
           className="sidebar-toggle-btn" 
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          style={{ display: 'none' }}
         >
           {sidebarOpen ? <FiX /> : <FiMenu />}
         </button>
@@ -425,8 +458,8 @@ const AdminDashboard = () => {
                   <tbody>
                     {users.map(u => (
                       <tr key={u._id}>
-                        <td style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {u.avatar ? <img src={u.avatar} className="avatar" alt="" /> : <div className="avatar avatar-placeholder">{u.name[0]}</div>}
+                        <td style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <AvatarWithFallback src={u.avatar} name={u.name} size={32} />
                           {u.name}
                         </td>
                         <td>{u.email}</td><td>{u.phone || '-'}</td>
@@ -435,6 +468,8 @@ const AdminDashboard = () => {
                           <button className="btn btn-sm btn-secondary" onClick={() => viewUserImages(u._id)} title="View Images"><FiImage /></button>
                           <button className="btn btn-sm btn-primary" onClick={() => { setSelectedUserForAllot(u); setShowAllotModal(true); }} title="Allot Batch"><FiPlus /> Allot</button>
                           <button className="btn btn-sm btn-info" onClick={() => { setTab('messages'); setActiveChat({ userId: u._id, userName: u.name }); }} title="Chat"><FiMessageSquare /></button>
+                          <button className="btn btn-sm btn-outline" onClick={() => handleSendManualEmail(u._id, 'welcome')} title="Send Welcome Mail"><FiPlus style={{ transform: 'rotate(45deg)' }} /> Welcome</button>
+                          <button className="btn btn-sm btn-outline" onClick={() => handleSendManualEmail(u._id, 'reminder')} title="Send Reminder Mail">☀️ Nudge</button>
                         </td>
                       </tr>
                     ))}
@@ -454,6 +489,9 @@ const AdminDashboard = () => {
                   <option value="">Choose a batch</option>
                   {batches.map(b => <option key={b._id} value={b._id}>{b.title}</option>)}
                 </select>
+                <button className="btn btn-sm btn-outline" style={{ marginTop: 12, borderColor: '#ef4444', color: '#ef4444' }} onClick={handleCleanup}>
+                  <FiTrash2 /> Cleanup Broken Data
+                </button>
               </div>
               {enrollments.length > 0 ? (
                 <div className="table-container">
@@ -462,7 +500,13 @@ const AdminDashboard = () => {
                     <tbody>
                       {enrollments.map(e => (
                         <tr key={e._id}>
-                          <td>{e.userId?.name}</td><td>{e.userId?.email}</td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <AvatarWithFallback src={e.userId?.avatar} name={e.userId?.name || 'Unknown'} size={32} />
+                              <span style={{ fontWeight: 600 }}>{e.userId?.name || 'Unknown User'}</span>
+                            </div>
+                          </td>
+                          <td style={{ color: 'var(--text-dim)' }}>{e.userId?.email || 'N/A'}</td>
                           <td><span className={`badge ${e.status === 'active' ? 'badge-success' : 'badge-warning'}`}>{e.status}</span></td>
                           <td>
                             {e.token ? (
@@ -544,7 +588,7 @@ const AdminDashboard = () => {
                           <tr key={i}>
                             <td>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                {m.user.avatar ? <img src={m.user.avatar} className="avatar" style={{ width: 32, height: 32 }} alt="" /> : <div className="avatar avatar-placeholder" style={{ width: 32, height: 32 }}>{m.user.name[0]}</div>}
+                                <AvatarWithFallback src={m.user.avatar} name={m.user.name} size={32} />
                                 <div>
                                   <div style={{ fontWeight: 600 }}>{m.user.name}</div>
                                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{m.user.email}</div>

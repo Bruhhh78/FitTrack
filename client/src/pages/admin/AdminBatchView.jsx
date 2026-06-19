@@ -177,7 +177,11 @@ const AdminBatchView = () => {
             <p>{batch.description?.substring(0, 160)}...</p>
             <div className="hero-footer">
                <div className="instructor-info">
-                  <div className="avatar avatar-placeholder">{batch.createdBy?.name?.[0] || 'A'}</div>
+                  {batch.createdBy?.avatar ? (
+                    <img src={batch.createdBy.avatar} alt={batch.createdBy.name} className="avatar" style={{ border: '2px solid rgba(255,255,255,0.2)' }} />
+                  ) : (
+                    <div className="avatar avatar-placeholder">{batch.createdBy?.name?.[0] || 'A'}</div>
+                  )}
                   <span>Instructor: {batch.createdBy?.name || 'Admin'}</span>
                </div>
                <div className="admin-actions">
@@ -267,26 +271,33 @@ const AdminBatchView = () => {
       <style dangerouslySetInnerHTML={{ __html: `
         .learn-page-v2 { 
           min-height: 100vh; 
-          background: var(--bg-primary); 
+          background: var(--bg-deep); 
           padding-top: calc(var(--navbar-height) + 40px);
           padding-bottom: 120px; 
         }
         .admin-top-nav { display: flex; justify-content: space-between; align-items: center; }
         .learn-hero-card { 
           display: flex; background: var(--gradient-hero); border-radius: var(--radius-xl); 
-          overflow: hidden; color: white; box-shadow: var(--shadow-xl); border: 1px solid rgba(255,255,255,0.1);
+          overflow: hidden; color: white; box-shadow: var(--shadow-xl); border: 1px solid var(--glass-border);
+          margin-bottom: 32px;
         }
+        [data-theme="light"] .learn-hero-card { color: #000; }
         .hero-thumb { width: 350px; background: #000; overflow: hidden; }
         .hero-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .thumb-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 2rem; color: var(--accent); }
         .hero-info { flex: 1; padding: 40px; display: flex; flex-direction: column; justify-content: center; gap: 16px; }
-        .hero-info h1 { font-size: 2.5rem; font-weight: 900; margin: 0; }
-        .hero-info p { color: rgba(255,255,255,0.7); font-size: 1rem; line-height: 1.6; max-width: 800px; }
+        .hero-info h1 { font-size: 2.5rem; font-weight: 900; margin: 0; color: inherit; }
+        .hero-info p { color: rgba(255,255,255,0.8); font-size: 1rem; line-height: 1.6; max-width: 800px; }
+        [data-theme="light"] .hero-info p { color: rgba(0,0,0,0.7); }
         .badge-row { display: flex; gap: 12px; align-items: center; }
-        .meta-item { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: rgba(255,255,255,0.6); }
-        .hero-info .badge { color: #ffffff !important; border: 1px solid rgba(255,255,255,0.2); }
+        .hero-info .badge { color: white !important; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.2); }
+        [data-theme="light"] .hero-info .badge { color: #000 !important; border-color: rgba(0,0,0,0.1); background: rgba(0,0,0,0.05); }
+        .meta-item { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: rgba(255,255,255,0.7); }
+        [data-theme="light"] .meta-item { color: rgba(0,0,0,0.6); }
         .hero-footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; }
-        .instructor-info { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 600; }
+        [data-theme="light"] .hero-footer { border-color: rgba(0,0,0,0.1); }
+        .instructor-info { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 600; color: white; }
+        [data-theme="light"] .instructor-info { color: #000; }
         .progress-stats { display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; }
 
         .learn-layout { display: grid; grid-template-columns: 1fr 380px; gap: 32px; }
@@ -344,9 +355,26 @@ const AdminBatchView = () => {
         .check-icon { color: var(--success); }
         .arrow-icon { color: var(--text-muted); font-size: 0.8rem; }
 
-        .text-body { background: var(--bg-secondary); padding: 32px; border-radius: 12px; line-height: 1.8; font-size: 1.1rem; white-space: pre-wrap; }
-        .image-wrapper img { width: 100%; border-radius: 12px; }
+        .text-body { background: var(--bg-secondary); padding: 32px; border-radius: 12px; line-height: 1.8; font-size: 1.1rem; white-space: pre-wrap; color: var(--text-main); }
+        .image-wrapper img { width: 100%; border-radius: 12px; border: 1px solid var(--border-color); }
         .empty-content-state { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); gap: 16px; }
+
+        /* Mobile Specifics */
+        @media (max-width: 768px) {
+          .learn-hero-card { flex-direction: column; }
+          .hero-thumb { width: 100%; height: 200px; }
+          .hero-info { padding: 24px; }
+          .hero-info h1 { font-size: 1.8rem; }
+          .hero-footer { flex-direction: column; align-items: flex-start; gap: 16px; }
+          .admin-actions { width: 100%; }
+          .admin-actions button { width: 100%; }
+          .player-nav { flex-direction: column; gap: 12px; padding: 16px; }
+          .player-nav button { width: 100%; }
+          .sidebar-card { height: auto; sticky: static; }
+          .pdf-viewer-container { height: 400px !important; }
+          .content-header { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+          .content-header button { width: 100%; }
+        }
       `}} />
     </div>
   );

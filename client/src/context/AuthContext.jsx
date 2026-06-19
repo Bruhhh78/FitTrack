@@ -46,6 +46,14 @@ export const AuthProvider = ({ children }) => {
     return res.data;
   };
 
+  const googleLogin = async (credential) => {
+    const res = await api.post('/auth/google', { credential });
+    localStorage.setItem('fittrack-token', res.data.token);
+    setToken(res.data.token);
+    setUser(res.data.user);
+    return res.data;
+  };
+
   const loginWithToken = (tkn) => {
     localStorage.setItem('fittrack-token', tkn);
     setToken(tkn);
@@ -58,7 +66,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, loginWithToken, logout, loadUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, googleLogin, loginWithToken, logout, loadUser }}>
       {children}
     </AuthContext.Provider>
   );

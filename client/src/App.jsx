@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
@@ -13,6 +14,7 @@ import MeasurementForm from './pages/MeasurementForm';
 import MealTracker from './pages/MealTracker';
 import StreakDashboard from './pages/StreakDashboard';
 import DailyActivity from './pages/DailyActivity';
+import AuthPortal from './pages/AuthPortal';
 
 import Learn from './pages/Learn';
 import Messenger from './pages/Messenger';
@@ -22,13 +24,14 @@ import AdminBatchView from './pages/admin/AdminBatchView';
 
 function App() {
   return (
-    <>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <Toaster position="top-right" toastOptions={{ className: 'toast-custom', duration: 3000 }} />
       <Navbar />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/auth" element={<AuthPortal />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/batches" element={<BatchList />} />
         <Route path="/batches/:id" element={<ProtectedRoute><BatchDetail /></ProtectedRoute>} />
@@ -45,7 +48,7 @@ function App() {
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/admin/batch/:id" element={<AdminRoute><AdminBatchView /></AdminRoute>} />
       </Routes>
-    </>
+    </GoogleOAuthProvider>
   );
 }
 

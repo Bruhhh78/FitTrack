@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
-import { FiClock, FiUsers, FiCheckCircle, FiDownload, FiVideo, FiKey, FiLock } from 'react-icons/fi';
+import { FiClock, FiUsers, FiCheckCircle, FiDownload, FiKey, FiLock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 const getYouTubeID = (url) => {
@@ -34,7 +34,6 @@ const BatchDetail = () => {
       await api.post('/batches/validate-token', { batchId: id, token });
       toast.success('Access granted! Welcome to the program.');
       setShowTokenModal(false);
-      // Refresh batch data to show dashboard link
       const r = await api.get(`/batches/${id}`);
       setBatch(r.data.batch);
     } catch (err) {
@@ -47,28 +46,94 @@ const BatchDetail = () => {
 
   return (
     <div className="page-wrapper">
+      {/* Responsive Styles */}
+      <style>{`
+        .batch-detail-grid {
+          display: grid;
+          grid-template-columns: 1fr 380px;
+          gap: 40px;
+          align-items: start;
+        }
+
+        .features-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+        }
+
+        .sticky-sidebar {
+          position: sticky;
+          top: calc(var(--navbar-height) + 24px);
+        }
+
+        @media (max-width: 1024px) {
+          .batch-detail-grid {
+            grid-template-columns: 1fr;
+            gap: 32px;
+          }
+          
+          .sticky-sidebar {
+            position: relative;
+            top: 0;
+            order: -1; /* Moves pricing card to top on mobile */
+          }
+
+          .batch-title {
+            font-size: 1.8rem !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .pricing-footer {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 20px !important;
+          }
+          .pricing-footer button {
+            width: 100%;
+            padding: 16px !important;
+          }
+          .batch-detail-grid {
+            padding: 0 4px;
+          }
+          .section {
+            padding: 40px 0 !important;
+          }
+        }
+      `}</style>
+
       <section className="section">
         <div className="container">
           <div className="batch-detail-grid">
+            {/* Main Content */}
             <div className="fade-in">
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                <span className="badge badge-teal"><FiClock /> {batch.duration} {batch.durationType}</span>
-                <span className="badge badge-success"><FiUsers /> {batch.enrollmentCount} enrolled</span>
+              <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+                <span className="badge badge-teal" style={{ padding: '8px 16px' }}><FiClock style={{marginRight: 6}} /> {batch.duration} {batch.durationType}</span>
+                <span className="badge badge-success" style={{ padding: '8px 16px' }}><FiUsers style={{marginRight: 6}} /> {batch.enrollmentCount} enrolled</span>
               </div>
-              <h1 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: 16 }}>{batch.title}</h1>
-              <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: 1.7, marginBottom: 32 }}>{batch.description}</p>
+              
+              <h1 className="batch-title" style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: 16, lineHeight: 1.2 }}>
+                {batch.title}
+              </h1>
+              
+              <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: 1.7, marginBottom: 32 }}>
+                {batch.description}
+              </p>
+
               {batch.features?.length > 0 && (
                 <div style={{ marginBottom: 32 }}>
                   <h3 style={{ marginBottom: 16, fontWeight: 700 }}>What's Included</h3>
-                  <div className="grid grid-2">
+                  <div className="features-grid">
                     {batch.features.map((f, i) => (
                       <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                        <FiCheckCircle style={{ color: 'var(--accent)', flexShrink: 0 }} /> <span style={{ fontSize: '0.9rem' }}>{f}</span>
+                        <FiCheckCircle style={{ color: 'var(--accent)', flexShrink: 0 }} /> 
+                        <span style={{ fontSize: '0.95rem' }}>{f}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
+
               {batch.isEnrolled && (
                 <div style={{ marginBottom: 32 }}>
                   <h3 style={{ marginBottom: 16, fontWeight: 700 }}>Program Resources</h3>
@@ -79,79 +144,78 @@ const BatchDetail = () => {
                   </div>
                 </div>
               )}
+
               {batch.guideLink && (
                 <div style={{ marginBottom: 32 }}>
                   <h3 style={{ marginBottom: 16, fontWeight: 700 }}>Program Guide Video</h3>
-                  <div className="video-container" style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)' }}>
+                  <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', background: '#000' }}>
                     <iframe
                       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
                       src={`https://www.youtube.com/embed/${getYouTubeID(batch.guideLink)}`}
                       title="YouTube video player"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     ></iframe>
                   </div>
                 </div>
               )}
+
               {batch.challenges?.length > 0 && (
                 <div>
                   <h3 style={{ marginBottom: 16, fontWeight: 700 }}>Challenges ({batch.challenges.length})</h3>
                   {batch.challenges.map((c, i) => (
-                    <div key={c._id} className="card" style={{ marginBottom: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={c._id} className="card" style={{ marginBottom: 12, padding: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                         <div>
-                          <h4 style={{ fontWeight: 600 }}>Challenge {i + 1}: {c.title}</h4>
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Day {c.startDay} - Day {c.endDay} • {c.duration} days</p>
+                          <h4 style={{ fontWeight: 600, margin: 0 }}>Challenge {i + 1}: {c.title}</h4>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '4px 0 0' }}>Day {c.startDay} - Day {c.endDay} • {c.duration} days</p>
                         </div>
-                        <span className="badge badge-teal">{c.duration} days</span>
+                        <span className="badge badge-teal" style={{ flexShrink: 0 }}>{c.duration} days</span>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-            {/* Sidebar pricing card */}
-            <div className="card fade-in" style={{ position: 'sticky', top: 'calc(var(--navbar-height) + 24px)', padding: 0, overflow: 'hidden' }}>
-              <div style={{ height: 200, position: 'relative', background: 'var(--gradient-hero)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {batch.thumbnailUrl ? (
-                  <img src={batch.thumbnailUrl} alt={batch.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <span style={{ fontSize: '4rem' }}>🏋️</span>
-                )}
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.4), transparent)' }} />
-              </div>
 
-              <div style={{ padding: 24 }}>
-                <div style={{ textAlign: 'left', marginBottom: 24 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 16px' }}>
-                    {['Expert guidance', 'Daily tracking', 'Streak challenges', 'Diet plans', 'Exercise plans', 'Community'].map((f, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                        <FiCheckCircle style={{ color: 'var(--accent)', flexShrink: 0 }} size={14} /> <span>{f}</span>
-                      </div>
-                    ))}
-                  </div>
+            {/* Sidebar pricing card */}
+            <div className="sticky-sidebar">
+              <div className="card fade-in" style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ height: 220, position: 'relative', background: 'var(--gradient-hero)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {batch.thumbnailUrl ? (
+                    <img src={batch.thumbnailUrl} alt={batch.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ fontSize: '4rem' }}>🏋️</span>
+                  )}
                 </div>
 
-                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-                  <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textDecoration: 'line-through', marginBottom: -4 }}>₹{batch.originalPrice}</div>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent)' }}>₹{batch.offerPrice}</div>
+                <div style={{ padding: 24 }}>
+                  <div style={{ marginBottom: 24 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      {['Expert guidance', 'Daily tracking', 'Streak challenges', 'Diet plans'].map((f, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          <FiCheckCircle style={{ color: 'var(--accent)', flexShrink: 0 }} size={14} /> <span>{f}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  <div style={{ flex: 1 }}>
-                    {user?.role === 'admin' ? (
-                      <button className="btn btn-secondary btn-sm" style={{ width: '100%' }} onClick={() => navigate(`/admin/batch/${batch._id}`)}>
-                        Admin View
-                      </button>
-                    ) : batch.isEnrolled ? (
-                      <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={() => navigate(`/dashboard/${batch._id}`)}>
-                        Dashboard
-                      </button>
-                    ) : (
-                      <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={() => setShowTokenModal(true)}>
-                        <FiKey /> Unlock with Token
-                      </button>
-                    )}
+                  <div className="pricing-footer" style={{ borderTop: '1px solid var(--border)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+                    <div>
+                      <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>₹{batch.originalPrice}</div>
+                      <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent)' }}>₹{batch.offerPrice}</div>
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                      {user?.role === 'admin' ? (
+                        <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => navigate(`/admin/batch/${batch._id}`)}>Admin View</button>
+                      ) : batch.isEnrolled ? (
+                        <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => navigate(`/dashboard/${batch._id}`)}>Dashboard</button>
+                      ) : (
+                        <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setShowTokenModal(true)}>
+                          <FiKey /> Unlock
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -159,9 +223,11 @@ const BatchDetail = () => {
           </div>
         </div>
       </section>
+
+      {/* Modal is already mostly responsive, just ensured padding/width */}
       {showTokenModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowTokenModal(false)}>
-          <div className="modal" style={{ maxWidth: 400 }}>
+          <div className="modal" style={{ width: '90%', maxWidth: 400, padding: 24 }}>
             <div className="modal-header">
               <h3 className="modal-title">Authorize Access</h3>
               <button className="modal-close" onClick={() => setShowTokenModal(false)}>×</button>
@@ -170,21 +236,18 @@ const BatchDetail = () => {
               <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(13, 148, 136, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                 <FiLock style={{ color: 'var(--accent)', fontSize: '1.5rem' }} />
               </div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Please enter the 7-character Batch Token provided by your instructor.</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Enter the 7-character Batch Token.</p>
             </div>
             <form onSubmit={handleUnlock}>
-              <div className="form-group">
-                <input 
-                  className="form-input" 
-                  type="text" 
-                  placeholder="Enter Token (e.g. A1B2C3D)" 
-                  value={token} 
-                  onChange={e => setToken(e.target.value.toUpperCase())} 
-                  maxLength={7}
-                  style={{ textAlign: 'center', fontSize: '1.2rem', letterSpacing: 4, fontWeight: 700 }}
-                  required 
-                />
-              </div>
+              <input 
+                className="form-input" 
+                type="text" 
+                value={token} 
+                onChange={e => setToken(e.target.value.toUpperCase())} 
+                maxLength={7}
+                style={{ textAlign: 'center', fontSize: '1.2rem', letterSpacing: 4, fontWeight: 700, marginBottom: 16 }}
+                required 
+              />
               <button className="btn btn-primary" style={{ width: '100%' }} disabled={validating}>
                 {validating ? 'Verifying...' : 'Unlock Program'}
               </button>

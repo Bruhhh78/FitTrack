@@ -1,5 +1,8 @@
 const User = require('../models/User');
 const { generateToken } = require('../middleware/auth');
+const { OAuth2Client } = require('google-auth-library');
+const { sendWelcomeEmail } = require('../utils/email');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -21,6 +24,9 @@ const register = async (req, res) => {
     });
 
     const token = generateToken(user._id);
+
+    // Send Welcome Email (Don't await, let it run in background)
+    sendWelcomeEmail(user).catch(err => console.error('Email Error:', err));
 
     res.status(201).json({
       success: true,
@@ -128,16 +134,62 @@ const updateProfile = async (req, res) => {
   }
 };
 
-// @desc    Google OAuth callback handler
-// @route   GET /api/auth/google/callback
-const googleCallback = async (req, res) => {
+const googleLogin = async (req, res) => {
   try {
-    const token = generateToken(req.user._id);
-    // Redirect to frontend with token
-    res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
+    const { credential } = req.body;
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { email, name, picture, sub } = payload;
+
+    let user = await User.findOne({ email });
+
+    if (user && user.role === 'admin') {
+      return res.status(403).json({ message: 'Admins must login with email and password' });
+    }
+
+    let isNewUser = false;
+    if (!user) {
+      isNewUser = true;
+      // Create new user if not exists
+      user = await User.create({
+        name,
+        email,
+        avatar: picture,
+        googleId: sub,
+        isVerified: true,
+      });
+    } else if (!user.googleId) {
+      // Link Google account if user exists but registered via email
+      user.googleId = sub;
+      if (!user.avatar) user.avatar = picture;
+      await user.save();
+    }
+
+    const token = generateToken(user._id);
+
+    // If new user, send welcome email
+    if (isNewUser) {
+      sendWelcomeEmail(user).catch(err => console.error('Email Error:', err));
+    }
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+        phone: user.phone,
+      },
+    });
   } catch (error) {
-    res.redirect(`${process.env.CLIENT_URL}/login?error=auth_failed`);
+    res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = { register, login, getMe, updateProfile, googleCallback };
+module.exports = { register, login, getMe, updateProfile, googleLogin };
