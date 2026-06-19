@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { FiUsers, FiPackage, FiActivity, FiPlus, FiEdit2, FiTrash2, FiEye, FiImage, FiX, FiBook, FiArrowLeft, FiEdit3, FiKey, FiCopy, FiCheck, FiMessageSquare, FiMenu, FiDownload } from 'react-icons/fi';
 import CurriculumManager from '../../components/admin/CurriculumManager';
 import Chat from '../../components/Chat';
+import { DIET_ROUTINE } from '../../utils/dietRoutine';
 
 const AvatarWithFallback = ({ src, name, size = 32 }) => {
   const [error, setError] = useState(false);
@@ -25,8 +26,45 @@ const AdminDashboard = () => {
   const [selectedBatchForCurriculum, setSelectedBatchForCurriculum] = useState(null);
   const [showBatchForm, setShowBatchForm] = useState(false);
   const [showChallengeForm, setShowChallengeForm] = useState(false);
-  const [batchForm, setBatchForm] = useState({ title: '', description: '', duration: '', durationType: 'days', originalPrice: '', offerPrice: '', maxParticipants: 50, features: '', guideLink: '', thumbnailUrl: '', curriculum: [] });
+  const [batchForm, setBatchForm] = useState({ title: '', description: '', duration: '', durationType: 'days', originalPrice: '', offerPrice: '', maxParticipants: 50, features: '', guideLink: '', thumbnailUrl: '', curriculum: [], dietRoutine: [] });
   const [challengeForm, setChallengeForm] = useState({ batchId: '', title: '', description: '', duration: '', startDay: '', endDay: '', instructions: '' });
+  const [showRoutineSection, setShowRoutineSection] = useState(false);
+  const [activeRoutineEditDay, setActiveRoutineEditDay] = useState(1);
+  const [selectedBatchForEditing, setSelectedBatchForEditing] = useState(null);
+
+  useEffect(() => {
+    if (!showBatchForm && !selectedBatchForEditing) return;
+    const durationNum = Number(batchForm.duration);
+    if (!durationNum || isNaN(durationNum) || durationNum <= 0) return;
+    
+    const totalDays = batchForm.durationType === 'weeks' ? durationNum * 7 : batchForm.durationType === 'months' ? durationNum * 30 : durationNum;
+    
+    setBatchForm(prev => {
+      const currentRoutine = prev.dietRoutine ? [...prev.dietRoutine] : [];
+      if (currentRoutine.length === totalDays) return prev;
+      
+      if (currentRoutine.length < totalDays) {
+        const diff = totalDays - currentRoutine.length;
+        const newItems = [];
+        for (let i = 0; i < diff; i++) {
+          const dayNum = currentRoutine.length + i + 1;
+          const weekNum = Math.floor((dayNum - 1) / 7) + 1;
+          newItems.push({
+            day: dayNum,
+            week: weekNum,
+            type: 'regular',
+            rule: '',
+            veg: { breakfast: '', lunch: '', dinner: '' },
+            nonveg: { breakfast: '', lunch: '', dinner: '' }
+          });
+        }
+        return { ...prev, dietRoutine: [...currentRoutine, ...newItems] };
+      } else {
+        return { ...prev, dietRoutine: currentRoutine.slice(0, totalDays) };
+      }
+    });
+  }, [batchForm.duration, batchForm.durationType, showBatchForm, selectedBatchForEditing]);
+
   const [userImages, setUserImages] = useState(null);
   const [editingBatchId, setEditingBatchId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -88,7 +126,7 @@ const AdminDashboard = () => {
   };
 
   const editBatch = (batch) => {
-    setEditingBatchId(batch._id);
+    setSelectedBatchForEditing(batch);
     setBatchForm({
       title: batch.title,
       description: batch.description,
@@ -100,27 +138,45 @@ const AdminDashboard = () => {
       features: (batch.features || []).join('\n'),
       guideLink: batch.guideLink || '',
       thumbnailUrl: batch.thumbnailUrl || '',
-      curriculum: batch.curriculum || []
+      curriculum: batch.curriculum || [],
+      dietRoutine: batch.dietRoutine || []
     });
-    setShowBatchForm(true);
+    setActiveRoutineEditDay(1);
+    setTab('edit-batch');
   };
 
   const saveBatch = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     try {
-      const payload = { ...batchForm, features: batchForm.features.split('\n').filter(Boolean), duration: Number(batchForm.duration), originalPrice: Number(batchForm.originalPrice), offerPrice: Number(batchForm.offerPrice), maxParticipants: Number(batchForm.maxParticipants) };
-      if (editingBatchId) {
-        await api.put(`/batches/${editingBatchId}`, payload);
+      const payload = { 
+        ...batchForm, 
+        features: typeof batchForm.features === 'string' ? batchForm.features.split('\n').filter(Boolean) : batchForm.features, 
+        duration: Number(batchForm.duration), 
+        originalPrice: Number(batchForm.originalPrice), 
+        offerPrice: Number(batchForm.offerPrice), 
+        maxParticipants: Number(batchForm.maxParticipants) 
+      };
+      
+      const isEditing = selectedBatchForEditing !== null && !showBatchForm;
+      const id = selectedBatchForEditing?._id;
+      
+      if (isEditing) {
+        await api.put(`/batches/${id}`, payload);
         toast.success('Batch updated!');
+        setSelectedBatchForEditing(null);
+        setTab('batches');
       } else {
         await api.post('/batches', payload);
         toast.success('Batch created!');
+        setShowBatchForm(false);
       }
-      setShowBatchForm(false);
-      setEditingBatchId(null);
-      setBatchForm({ title: '', description: '', duration: '', durationType: 'days', originalPrice: '', offerPrice: '', maxParticipants: 50, features: '', guideLink: '', thumbnailUrl: '', curriculum: [] });
-      const r = await api.get('/batches'); setBatches(r.data.batches);
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
+      
+      setBatchForm({ title: '', description: '', duration: '', durationType: 'days', originalPrice: '', offerPrice: '', maxParticipants: 50, features: '', guideLink: '', thumbnailUrl: '', curriculum: [], dietRoutine: [] });
+      const r = await api.get('/batches'); 
+      setBatches(r.data.batches);
+    } catch (err) { 
+      toast.error(err.response?.data?.message || 'Failed'); 
+    }
   };
 
   const deleteBatch = async (id) => {
@@ -267,6 +323,7 @@ const AdminDashboard = () => {
           {[
             { key: 'dashboard', icon: <FiActivity />, label: 'Overview' },
             { key: 'batches', icon: <FiPackage />, label: 'Batches' },
+            { key: 'edit-batch', icon: <FiEdit2 />, label: 'Edit Batch' },
             { key: 'curriculum', icon: <FiBook />, label: 'Curriculum' },
             { key: 'daily-monitor', icon: <FiActivity />, label: 'Daily Monitor' },
             { key: 'users', icon: <FiUsers />, label: 'Users' },
@@ -372,7 +429,7 @@ const AdminDashboard = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontWeight: 800 }}>Manage Batches</h2>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-primary btn-sm" onClick={() => { setEditingBatchId(null); setBatchForm({ title: '', description: '', duration: '', durationType: 'days', originalPrice: '', offerPrice: '', maxParticipants: 50, features: '', guideLink: '', thumbnailUrl: '', curriculum: [] }); setShowBatchForm(true); }}><FiPlus /> New Batch</button>
+                  <button className="btn btn-primary btn-sm" onClick={() => { setSelectedBatchForEditing(null); setBatchForm({ title: '', description: '', duration: '', durationType: 'days', originalPrice: '', offerPrice: '', maxParticipants: 50, features: '', guideLink: '', thumbnailUrl: '', curriculum: [], dietRoutine: [] }); setShowBatchForm(true); setActiveRoutineEditDay(1); }}><FiPlus /> New Batch</button>
                   <button className="btn btn-secondary btn-sm" onClick={() => setShowChallengeForm(true)}><FiPlus /> New Challenge</button>
                 </div>
               </div>
@@ -383,12 +440,366 @@ const AdminDashboard = () => {
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{b.duration} {b.durationType} • ₹{b.offerPrice} • {b.enrollmentCount || 0} enrolled</p>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-sm btn-secondary" title="Edit Batch" onClick={() => editBatch(b)}><FiEdit2 /></button>
+                    <button className="btn btn-sm btn-secondary" title="Edit Batch Details & Diet" onClick={() => editBatch(b)}><FiEdit2 /></button>
                     <button className="btn btn-sm btn-info" title="View Enrollments" onClick={() => loadEnrollments(b._id)}><FiEye /></button>
                     <button className="btn btn-sm btn-danger" title="Delete Batch" onClick={() => deleteBatch(b._id)}><FiTrash2 /></button>
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* EDIT BATCH TAB */}
+          {tab === 'edit-batch' && (
+            <div className="fade-in">
+              {selectedBatchForEditing ? (
+                <div className="batch-edit-workspace-view">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+                    <div>
+                      <button className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => { setSelectedBatchForEditing(null); setTab('batches'); }}>
+                        <FiArrowLeft /> Back to Batches List
+                      </button>
+                      <h2 style={{ fontWeight: 900, marginTop: 16, marginBottom: 4 }}>Edit Program: {selectedBatchForEditing.title}</h2>
+                      <p style={{ color: 'var(--text-muted)', margin: 0 }}>Modify batch details and configure day-wise diet schedules.</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button className="btn btn-outline" onClick={() => { setSelectedBatchForEditing(null); setTab('batches'); }}>Cancel</button>
+                      <button className="btn btn-primary" onClick={saveBatch}>Save Changes</button>
+                    </div>
+                  </div>
+
+                  {/* 2-Column Layout */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
+                    {/* Left Column: Metadata Forms */}
+                    <div className="card" style={{ padding: 24 }}>
+                      <h3 style={{ fontWeight: 800, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>📋 Batch Details</h3>
+                      
+                      <form onSubmit={saveBatch}>
+                        <div className="form-group">
+                          <label className="form-label">Batch Title</label>
+                          <input className="form-input" type="text" value={batchForm.title} onChange={e => setBatchForm(p => ({ ...p, title: e.target.value }))} required />
+                        </div>
+                        
+                        <div className="grid grid-2" style={{ gap: 16 }}>
+                          <div className="form-group">
+                            <label className="form-label">Duration</label>
+                            <input className="form-input" type="number" value={batchForm.duration} onChange={e => setBatchForm(p => ({ ...p, duration: e.target.value }))} required />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Unit</label>
+                            <select className="form-input" value={batchForm.durationType} onChange={e => setBatchForm(p => ({ ...p, durationType: e.target.value }))}>
+                              <option value="days">Days</option>
+                              <option value="weeks">Weeks</option>
+                              <option value="months">Months</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-2" style={{ gap: 16 }}>
+                          <div className="form-group">
+                            <label className="form-label">Price (Original price) (₹)</label>
+                            <input className="form-input" type="number" value={batchForm.originalPrice} onChange={e => setBatchForm(p => ({ ...p, originalPrice: e.target.value }))} required />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Offer Price (Discounted price) (₹)</label>
+                            <input className="form-input" type="number" value={batchForm.offerPrice} onChange={e => setBatchForm(p => ({ ...p, offerPrice: e.target.value }))} required />
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">Max Participants</label>
+                          <input className="form-input" type="number" value={batchForm.maxParticipants} onChange={e => setBatchForm(p => ({ ...p, maxParticipants: e.target.value }))} />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">Thumbnail URL</label>
+                          <input className="form-input" type="url" placeholder="https://image-url.com/..." value={batchForm.thumbnailUrl} onChange={e => setBatchForm(p => ({ ...p, thumbnailUrl: e.target.value }))} />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">Guide Link (YouTube) - Optional</label>
+                          <input className="form-input" type="url" placeholder="https://youtube.com/watch?v=..." value={batchForm.guideLink} onChange={e => setBatchForm(p => ({ ...p, guideLink: e.target.value }))} />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">Description</label>
+                          <textarea className="form-input" rows="4" value={batchForm.description} onChange={e => setBatchForm(p => ({ ...p, description: e.target.value }))} required />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">Features (one per line)</label>
+                          <textarea className="form-input" rows="4" placeholder="Feature 1&#10;Feature 2" value={batchForm.features} onChange={e => setBatchForm(p => ({ ...p, features: e.target.value }))} />
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* Right Column: Dynamic Diet Routine Editor */}
+                    <div className="card" style={{ padding: 24 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+                        <h3 style={{ fontWeight: 800, margin: 0 }}>🥗 Diet Routine Plan</h3>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          style={{ fontSize: '0.72rem', padding: '6px 12px', color: 'var(--accent)', background: 'var(--accent-light)', borderRadius: 8 }}
+                          onClick={() => {
+                            if (confirm('Are you sure you want to load the default 21-Day Inferno Routine? This will overwrite your current inputs.')) {
+                              setBatchForm(p => ({
+                                ...p,
+                                duration: 21,
+                                durationType: 'days',
+                                dietRoutine: DIET_ROUTINE
+                              }));
+                              setActiveRoutineEditDay(1);
+                              toast.success('Loaded Default 21-Day Inferno Diet Plan!');
+                            }
+                          }}
+                        >
+                          ⚡ Load Default Inferno21
+                        </button>
+                      </div>
+
+                      {batchForm.dietRoutine?.length > 0 ? (
+                        <div>
+                          {/* Grid of Day Selectors */}
+                          <div style={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: 'repeat(7, 1fr)', 
+                            gap: 6, 
+                            maxHeight: 180, 
+                            overflowY: 'auto', 
+                            marginBottom: 24, 
+                            padding: 8, 
+                            border: '1px solid var(--border)',
+                            borderRadius: 8,
+                            background: 'var(--bg-deep)'
+                          }}>
+                            {batchForm.dietRoutine.map((item, idx) => {
+                              const dNum = item.day;
+                              let dotBg = 'var(--bg-tertiary)';
+                              let dotColor = 'var(--text-main)';
+                              if (item.type === 'cleanse') {
+                                dotBg = '#10b981'; // Green for cleanse
+                                dotColor = '#fff';
+                              } else if (item.type === 'fasting') {
+                                dotBg = '#f59e0b'; // Amber for fasting
+                                dotColor = '#fff';
+                              }
+                              const isSelected = activeRoutineEditDay === dNum;
+                              return (
+                                  <button
+                                    key={dNum}
+                                    type="button"
+                                    onClick={() => setActiveRoutineEditDay(dNum)}
+                                    style={{
+                                      padding: '8px 4px',
+                                      background: isSelected ? 'var(--accent)' : dotBg,
+                                      color: isSelected ? '#fff' : dotColor,
+                                      borderRadius: 6,
+                                      border: isSelected ? '2px solid var(--text-main)' : '1px solid var(--border)',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      transition: 'all 0.2s'
+                                    }}
+                                  >
+                                    {dNum}
+                                  </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Active Editing Day Details */}
+                          {(() => {
+                            const activeDayItem = batchForm.dietRoutine.find(r => r.day === activeRoutineEditDay);
+                            if (!activeDayItem) return null;
+                            
+                            const updateActiveDayField = (field, val, isNested = false, nestedField = '') => {
+                              setBatchForm(prev => {
+                                const routine = prev.dietRoutine ? [...prev.dietRoutine] : [];
+                                const idx = routine.findIndex(r => r.day === activeRoutineEditDay);
+                                if (idx !== -1) {
+                                  if (isNested) {
+                                    routine[idx] = {
+                                      ...routine[idx],
+                                      [field]: {
+                                        ...routine[idx][field],
+                                        [nestedField]: val
+                                      }
+                                    };
+                                  } else {
+                                    routine[idx] = {
+                                      ...routine[idx],
+                                      [field]: val
+                                    };
+                                  }
+                                }
+                                return { ...prev, dietRoutine: routine };
+                              });
+                            };
+
+                            const copyToNextDay = () => {
+                              if (activeRoutineEditDay >= batchForm.dietRoutine.length) {
+                                  toast.error('This is already the last day!');
+                                  return;
+                              }
+                              setBatchForm(prev => {
+                                const routine = prev.dietRoutine ? [...prev.dietRoutine] : [];
+                                const currentIdx = routine.findIndex(r => r.day === activeRoutineEditDay);
+                                const nextIdx = routine.findIndex(r => r.day === activeRoutineEditDay + 1);
+                                if (currentIdx !== -1 && nextIdx !== -1) {
+                                  routine[nextIdx] = {
+                                    ...routine[nextIdx],
+                                    type: routine[currentIdx].type,
+                                    rule: routine[currentIdx].rule,
+                                    veg: { ...routine[currentIdx].veg },
+                                    nonveg: { ...routine[currentIdx].nonveg }
+                                  };
+                                  toast.success(`Copied Day ${activeRoutineEditDay} to Day ${activeRoutineEditDay + 1}!`);
+                                }
+                                return { ...prev, dietRoutine: routine };
+                              });
+                              setActiveRoutineEditDay(activeRoutineEditDay + 1);
+                            };
+
+                            const copyToWeek = () => {
+                              setBatchForm(prev => {
+                                const routine = prev.dietRoutine ? [...prev.dietRoutine] : [];
+                                const current = routine.find(r => r.day === activeRoutineEditDay);
+                                if (!current) return prev;
+                                
+                                let count = 0;
+                                routine.forEach((r, idx) => {
+                                  if (r.week === current.week && r.day !== current.day) {
+                                    routine[idx] = {
+                                      ...routine[idx],
+                                      type: current.type,
+                                      rule: current.rule,
+                                      veg: { ...current.veg },
+                                      nonveg: { ...current.nonveg }
+                                    };
+                                    count++;
+                                  }
+                                });
+                                toast.success(`Copied to ${count} other days in Week ${current.week}!`);
+                                return { ...prev, dietRoutine: routine };
+                              });
+                            };
+
+                            return (
+                              <div style={{ background: 'var(--bg-tertiary)', padding: 16, borderRadius: 10, border: '1px solid var(--border)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+                                  <h4 style={{ margin: 0, fontWeight: 800, fontSize: '0.95rem' }}>
+                                    ✍️ Day {activeRoutineEditDay} Setup (Week {activeDayItem.week})
+                                  </h4>
+                                  <div style={{ display: 'flex', gap: 6 }}>
+                                    <button type="button" className="btn btn-ghost btn-sm" style={{ fontSize: '0.72rem', padding: '4px 8px', borderRadius: 6 }} onClick={copyToWeek}>
+                                      📋 Copy to Week {activeDayItem.week}
+                                    </button>
+                                    <button type="button" className="btn btn-ghost btn-sm" style={{ fontSize: '0.72rem', padding: '4px 8px', borderRadius: 6 }} onClick={copyToNextDay}>
+                                      ⏭️ Copy to Day {activeRoutineEditDay + 1}
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                                  <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 4 }}>Day Type</label>
+                                    <select 
+                                      className="form-input" 
+                                      style={{ padding: '8px 12px', fontSize: '0.8rem' }}
+                                      value={activeDayItem.type || 'regular'} 
+                                      onChange={e => updateActiveDayField('type', e.target.value)}
+                                    >
+                                      <option value="regular">Regular Day</option>
+                                      <option value="cleanse">Cleanse Day</option>
+                                      <option value="fasting">Fasting Day</option>
+                                    </select>
+                                  </div>
+                                  <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 4 }}>Rule / Tag</label>
+                                    <input 
+                                      className="form-input" 
+                                      style={{ padding: '8px 12px', fontSize: '0.8rem' }}
+                                      type="text" 
+                                      placeholder="e.g. Sandwich Method" 
+                                      value={activeDayItem.rule || ''} 
+                                      onChange={e => updateActiveDayField('rule', e.target.value)}
+                                    />
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
+                                  {/* Veg Section */}
+                                  <div style={{ background: 'var(--bg-deep)', padding: 12, borderRadius: 8, border: '1px solid var(--border)' }}>
+                                    <h5 style={{ fontSize: '0.8rem', fontWeight: 800, color: '#10b981', display: 'flex', alignItems: 'center', gap: 4, margin: '0 0 10px 0' }}>🥗 Veg Meals</h5>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                      <div>
+                                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: 2 }}>Breakfast</label>
+                                        <input type="text" className="form-input" style={{ padding: '6px 10px', fontSize: '0.75rem' }} value={activeDayItem.veg?.breakfast || ''} onChange={e => updateActiveDayField('veg', e.target.value, true, 'breakfast')} />
+                                      </div>
+                                      <div>
+                                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: 2 }}>Lunch</label>
+                                        <input type="text" className="form-input" style={{ padding: '6px 10px', fontSize: '0.75rem' }} value={activeDayItem.veg?.lunch || ''} onChange={e => updateActiveDayField('veg', e.target.value, true, 'lunch')} />
+                                      </div>
+                                      <div>
+                                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: 2 }}>Dinner</label>
+                                        <input type="text" className="form-input" style={{ padding: '6px 10px', fontSize: '0.75rem' }} value={activeDayItem.veg?.dinner || ''} onChange={e => updateActiveDayField('veg', e.target.value, true, 'dinner')} />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Non-Veg Section */}
+                                  <div style={{ background: 'var(--bg-deep)', padding: 12, borderRadius: 8, border: '1px solid var(--border)' }}>
+                                    <h5 style={{ fontSize: '0.8rem', fontWeight: 800, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 4, margin: '0 0 10px 0' }}>🍗 Non-Veg Meals</h5>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                      <div>
+                                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: 2 }}>Breakfast</label>
+                                        <input type="text" className="form-input" style={{ padding: '6px 10px', fontSize: '0.75rem' }} value={activeDayItem.nonveg?.breakfast || ''} onChange={e => updateActiveDayField('nonveg', e.target.value, true, 'breakfast')} />
+                                      </div>
+                                      <div>
+                                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: 2 }}>Lunch</label>
+                                        <input type="text" className="form-input" style={{ padding: '6px 10px', fontSize: '0.75rem' }} value={activeDayItem.nonveg?.lunch || ''} onChange={e => updateActiveDayField('nonveg', e.target.value, true, 'lunch')} />
+                                      </div>
+                                      <div>
+                                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: 2 }}>Dinner</label>
+                                        <input type="text" className="form-input" style={{ padding: '6px 10px', fontSize: '0.75rem' }} value={activeDayItem.nonveg?.dinner || ''} onChange={e => updateActiveDayField('nonveg', e.target.value, true, 'dinner')} />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      ) : (
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Set a batch duration above to edit day-wise routine plans.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <h2 style={{ fontWeight: 800, marginBottom: 24 }}>Select Batch to Edit</h2>
+                  {batches.length > 0 ? (
+                    <div className="grid grid-3" style={{ gap: 16 }}>
+                      {batches.map(b => (
+                        <div key={b._id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                          <h4 style={{ fontWeight: 600 }}>{b.title}</h4>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{b.duration} {b.durationType} • ₹{b.offerPrice}</p>
+                          <button className="btn btn-sm btn-outline" style={{marginTop: 'auto'}} onClick={() => editBatch(b)}>
+                            <FiEdit2 /> Edit Details & Diet
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ color: 'var(--text-muted)' }}>No batches available to edit.</p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -895,7 +1306,7 @@ const AdminDashboard = () => {
                     <textarea className="form-input" rows="4" placeholder="Feature 1&#10;Feature 2" value={batchForm.features} onChange={e => setBatchForm(p => ({ ...p, features: e.target.value }))} />
                   </div>
 
-                  <button className="btn btn-primary" style={{ width: '100%' }}>{editingBatchId ? 'Update Batch' : 'Create Batch'}</button>
+                  <button className="btn btn-primary" style={{ width: '100%' }}>Create Batch</button>
                 </form>
               </div>
             </div>

@@ -32,6 +32,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
+    sessionStorage.removeItem('fittrack-stats-dismissed-at');
     localStorage.setItem('fittrack-token', res.data.token);
     setToken(res.data.token);
     setUser(res.data.user);
@@ -40,6 +41,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password, phone) => {
     const res = await api.post('/auth/register', { name, email, password, phone });
+    sessionStorage.removeItem('fittrack-stats-dismissed-at');
     localStorage.setItem('fittrack-token', res.data.token);
     setToken(res.data.token);
     setUser(res.data.user);
@@ -48,6 +50,7 @@ export const AuthProvider = ({ children }) => {
 
   const googleLogin = async (credential) => {
     const res = await api.post('/auth/google', { credential });
+    sessionStorage.removeItem('fittrack-stats-dismissed-at');
     localStorage.setItem('fittrack-token', res.data.token);
     setToken(res.data.token);
     setUser(res.data.user);

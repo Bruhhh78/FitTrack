@@ -146,10 +146,6 @@ const googleLogin = async (req, res) => {
 
     let user = await User.findOne({ email });
 
-    if (user && user.role === 'admin') {
-      return res.status(403).json({ message: 'Admins must login with email and password' });
-    }
-
     let isNewUser = false;
     if (!user) {
       isNewUser = true;

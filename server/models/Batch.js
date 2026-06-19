@@ -94,6 +94,24 @@ const batchSchema = new mongoose.Schema(
         ],
       },
     ],
+    dietRoutine: [
+      {
+        day: { type: Number, required: true },
+        week: { type: Number, required: true },
+        type: { type: String, enum: ['regular', 'cleanse', 'fasting'], default: 'regular' },
+        rule: { type: String, default: '' },
+        veg: {
+          breakfast: { type: String, default: '' },
+          lunch: { type: String, default: '' },
+          dinner: { type: String, default: '' },
+        },
+        nonveg: {
+          breakfast: { type: String, default: '' },
+          lunch: { type: String, default: '' },
+          dinner: { type: String, default: '' },
+        },
+      },
+    ],
   },
   { timestamps: true }
 );

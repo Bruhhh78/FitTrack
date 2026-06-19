@@ -3,12 +3,20 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import { GiMeal } from 'react-icons/gi';
-import { FiActivity, FiTarget, FiCalendar, FiEdit3, FiAward, FiArrowRight, FiPlayCircle } from 'react-icons/fi';
+import { FiActivity, FiTarget, FiCalendar, FiEdit3, FiAward, FiArrowRight, FiBookOpen } from 'react-icons/fi';
+import { DIET_ROUTINE } from '../utils/dietRoutine';
 
 const getYouTubeID = (url) => {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = url.match(regExp);
   return (match && match[2].length === 11) ? match[2] : null;
+};
+
+const getActiveMealIndex = () => {
+  const hours = new Date().getHours();
+  if (hours >= 5 && hours < 11) return 0;
+  if (hours >= 11 && hours < 17) return 1;
+  return 2;
 };
 
 const Dashboard = () => {
@@ -22,6 +30,14 @@ const Dashboard = () => {
   const [todayStats, setTodayStats] = useState(null);
   const [hasMeasurements, setHasMeasurements] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [skipped, setSkipped] = useState(false);
+  const [isVeg, setIsVeg] = useState(true);
+  const [routineDay, setRoutineDay] = useState(1);
+  const [showFullRoutine, setShowFullRoutine] = useState(false);
+
+  const activeDietRoutine = selectedEnrollment?.batchId?.dietRoutine?.length > 0
+    ? selectedEnrollment.batchId.dietRoutine
+    : DIET_ROUTINE;
 
   useEffect(() => {
     api.get('/enrollments/my').then(r => {
@@ -29,7 +45,7 @@ const Dashboard = () => {
       setEnrollments(data);
 
       if (batchId) {
-        const found = data.find(e => e.batchId._id === batchId);
+        const found = data.find(e => e.batchId?._id === batchId);
         if (found) setSelectedEnrollment(found);
         else if (data.length > 0) setSelectedEnrollment(data[0]);
       } else if (data.length > 0) {
@@ -41,10 +57,11 @@ const Dashboard = () => {
   }, [batchId]);
 
   useEffect(() => {
-    if (selectedEnrollment) {
-      api.get(`/streaks/${selectedEnrollment.batchId._id}`).then(r => setStreak(r.data.streak)).catch(() => {});
+    if (selectedEnrollment && selectedEnrollment.batchId) {
+      const bId = selectedEnrollment.batchId._id;
+      api.get(`/streaks/${bId}`).then(r => setStreak(r.data.streak)).catch(() => {});
       const today = new Date().toLocaleDateString('en-CA');
-      api.get(`/measurements/today/${selectedEnrollment.batchId._id}?date=${today}`).then(r => {
+      api.get(`/measurements/today/${bId}?date=${today}`).then(r => {
         if (!r.data.measurement) {
           setHasMeasurements(false);
           setTodayStats(null);
@@ -57,11 +74,39 @@ const Dashboard = () => {
         setTodayStats(null);
       });
 
-      api.get(`/meals/today/${selectedEnrollment.batchId._id}?date=${today}`).then(r => {
+      api.get(`/meals/today/${bId}?date=${today}`).then(r => {
         setTodayMeals(r.data.mealLog);
       }).catch(() => {});
+
+      setRoutineDay(selectedEnrollment.currentDay);
     }
   }, [selectedEnrollment]);
+
+  useEffect(() => {
+    const checkDismiss = () => {
+      const dismissedAt = sessionStorage.getItem('fittrack-stats-dismissed-at');
+      if (dismissedAt) {
+        const timePassed = Date.now() - parseInt(dismissedAt, 10);
+        if (timePassed < 5 * 60 * 1000) {
+          setSkipped(true);
+        } else {
+          setSkipped(false);
+          sessionStorage.removeItem('fittrack-stats-dismissed-at');
+        }
+      } else {
+        setSkipped(false);
+      }
+    };
+
+    checkDismiss();
+    const interval = setInterval(checkDismiss, 10000); // Check every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleSkip = () => {
+    sessionStorage.setItem('fittrack-stats-dismissed-at', Date.now().toString());
+    setSkipped(true);
+  };
 
   const selectProgram = (enrollment) => {
     setSelectedEnrollment(enrollment);
@@ -73,10 +118,16 @@ const Dashboard = () => {
   return (
     <div className="page-wrapper">
       <div className="container" style={{ paddingTop: 32, paddingBottom: 40, maxWidth: 1100, margin: '0 auto' }}>
-        {/* Header */}
-        <div className="fade-in" style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 4 }}>Welcome back, {user?.name?.split(' ')[0]} 👋</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Track your progress and stay consistent.</p>
+        {/* Welcome Header */}
+        <div className="dashboard-welcome-banner fade-in" style={{ marginBottom: 36, position: 'relative', overflow: 'hidden', padding: '32px', borderRadius: 'var(--radius-xl)', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', boxShadow: 'var(--shadow-md), var(--shadow-glow)' }}>
+          <div className="welcome-glow-bubble" />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <span className="badge badge-teal" style={{ marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member Dashboard</span>
+            <h1 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.4rem)', fontWeight: 900, marginBottom: 8, letterSpacing: '-0.03em' }}>
+              Welcome back, <span className="text-gradient">{user?.name?.split(' ')[0]}</span> 👋
+            </h1>
+            <p style={{ color: 'var(--text-dim)', fontSize: '1.02rem', margin: 0 }}>You are on Day <strong style={{ color: 'var(--primary)', fontSize: '1.1rem' }}>{selectedEnrollment?.currentDay || 1}</strong> of consistency. Keep going!</p>
+          </div>
         </div>
 
         {enrollments.length === 0 ? (
@@ -93,65 +144,86 @@ const Dashboard = () => {
               <div className="tabs" style={{ marginBottom: 24 }}>
                 {enrollments.map(e => (
                   <button key={e._id} className={`tab ${selectedEnrollment?._id === e._id ? 'active' : ''}`}
-                    onClick={() => selectProgram(e)}>{e.batchId?.title}</button>
+                    onClick={() => selectProgram(e)}>{e.batchId?.title || 'Unknown Program'}</button>
                 ))}
               </div>
             )}
 
-            {selectedEnrollment && (
+            {selectedEnrollment && !selectedEnrollment.batchId ? (
+              <div className="empty-state card" style={{ padding: 40, border: '1px solid var(--glass-border)', background: 'var(--bg-card)', position: 'relative', zIndex: 1 }}>
+                <div style={{ fontSize: '3rem', marginBottom: 16 }}>⚠️</div>
+                <h3 style={{ fontWeight: 800 }}>Program No Longer Available</h3>
+                <p style={{ color: 'var(--text-muted)', marginBottom: 20, maxWidth: 500, margin: '0 auto 20px auto' }}>
+                  The program you were enrolled in has been updated or removed. Please contact the admin to allot the correct active session.
+                </p>
+                <Link to="/batches" className="btn btn-primary" style={{ margin: '0 auto' }}>Browse Programs</Link>
+              </div>
+            ) : selectedEnrollment && (
               <div className="fade-in">
                 {/* Stats row */}
                 <div className="grid grid-4" style={{ marginBottom: 28 }}>
-                  <div className="card stat-card">
-                    <div className="stat-icon" style={{ background: 'var(--primary-subtle)', color: 'var(--primary)' }}><FiActivity /></div>
+                  <div className="dashboard-stat-card">
+                    <div className="stat-icon-wrapper" style={{ background: 'var(--primary-subtle)', color: 'var(--primary)', border: '1px solid var(--primary-glow)' }}><FiActivity /></div>
                     <div><div className="stat-value">{streak?.currentStreak || 0}</div><div className="stat-label">Current Streak</div></div>
                   </div>
-                  <div className="card stat-card">
-                    <div className="stat-icon" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}><FiAward /></div>
+                  <div className="dashboard-stat-card">
+                    <div className="stat-icon-wrapper" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', border: '1px solid var(--accent-glow)' }}><FiAward /></div>
                     <div><div className="stat-value">{streak?.longestStreak || 0}</div><div className="stat-label">Longest Streak</div></div>
                   </div>
-                  <div className="card stat-card">
-                    <div className="stat-icon" style={{ background: 'var(--info-glow)', color: 'var(--info)' }}><FiCalendar /></div>
+                  <div className="dashboard-stat-card">
+                    <div className="stat-icon-wrapper" style={{ background: 'var(--info-glow)', color: 'var(--info)', border: '1px solid var(--info-glow)' }}><FiCalendar /></div>
                     <div><div className="stat-value">{streak?.completedDays?.length || 0}</div><div className="stat-label">Days Logged</div></div>
                   </div>
-                  <div className="card stat-card">
-                    <div className="stat-icon" style={{ background: 'var(--success-glow)', color: 'var(--success)' }}><FiTarget /></div>
+                  <div className="dashboard-stat-card">
+                    <div className="stat-icon-wrapper" style={{ background: 'var(--success-glow)', color: 'var(--success)', border: '1px solid var(--success-glow)' }}><FiTarget /></div>
                     <div><div className="stat-value">{selectedEnrollment.progress || 0}%</div><div className="stat-label">Progress</div></div>
                   </div>
                 </div>
 
                 {/* Progress bar */}
-                <div className="card" style={{ marginBottom: 24 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-                    <h3 style={{ fontWeight: 700 }}>{selectedEnrollment.batchId?.title}</h3>
-                    <span className="badge badge-teal">Day {selectedEnrollment.currentDay} / {selectedEnrollment.batchId?.duration} {selectedEnrollment.batchId?.durationType}</span>
+                <div className="card glass-premium" style={{ marginBottom: 28, padding: '28px', border: '1px solid var(--glass-border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+                    <div>
+                      <span className="badge badge-teal" style={{ marginBottom: 6 }}>ACTIVE PROGRAM</span>
+                      <h3 style={{ fontWeight: 800, fontSize: '1.4rem', margin: 0, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>{selectedEnrollment.batchId?.title}</h3>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <span className="badge-pill badge-success-pill" style={{ fontSize: '0.82rem', padding: '6px 16px' }}>Day {selectedEnrollment.currentDay} / {selectedEnrollment.batchId?.duration} {selectedEnrollment.batchId?.durationType}</span>
+                    </div>
                   </div>
-                  <div className="progress-bar-container">
-                    <div className="progress-bar-fill" style={{ width: `${Math.min(100, (selectedEnrollment.currentDay / (selectedEnrollment.batchId?.duration || 1)) * 100)}%` }} />
+                  <div className="progress-bar-container" style={{ height: 10, background: 'var(--bg-deep)', borderRadius: 10 }}>
+                    <div className="progress-bar-fill" style={{ height: '100%', borderRadius: 10, background: 'var(--gradient-hero)', width: `${Math.min(100, (selectedEnrollment.currentDay / (selectedEnrollment.batchId?.duration || 1)) * 100)}%` }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: 8 }}>
+                    <span>Started Challenge</span>
+                    <span>{Math.round(Math.min(100, (selectedEnrollment.currentDay / (selectedEnrollment.batchId?.duration || 1)) * 100))}% Completed</span>
                   </div>
                   <button
                     className="btn btn-primary"
-                    style={{ width: '100%', marginTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: '1.05rem', padding: '14px' }}
-                    onClick={() => navigate(`/learn/${selectedEnrollment.batchId._id}`)}
+                    style={{ width: '100%', marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: '1.02rem', padding: '15px', borderRadius: '16px' }}
+                    onClick={() => navigate(`/learn/${selectedEnrollment.batchId?._id}`)}
                   >
-                    <FiPlayCircle size={22} /> Start Batch Session
+                    <FiBookOpen size={20} /> View Course Timeline & Diet Routine
                   </button>
                 </div>
 
                 {/* Quick actions */}
-                <h3 style={{ fontWeight: 700, marginBottom: 16 }}>Quick Actions</h3>
+                <h3 style={{ fontWeight: 800, marginBottom: 16, fontSize: '1.25rem', letterSpacing: '-0.02em' }}>Quick Actions</h3>
                 <div className="grid grid-4" style={{ marginBottom: 32 }}>
                   {[
-                    { icon: <FiEdit3 size={26} />, title: 'Body Stats', desc: 'Morning measurements', path: `/measurements/${selectedEnrollment.batchId._id}`, color: 'var(--primary)' },
-                    { icon: <FiActivity size={26} />, title: 'Walking Steps', desc: 'Daily movement log', path: `/daily/${selectedEnrollment.batchId._id}`, color: 'var(--accent)' },
-                    { icon: <GiMeal size={26} />, title: 'Track Meals', desc: 'Log your food', path: `/meals/${selectedEnrollment.batchId._id}`, color: 'var(--info)' },
-                    { icon: <FiAward size={26} />, title: 'View Streak', desc: 'Check consistency', path: `/streak/${selectedEnrollment.batchId._id}`, color: 'var(--success)' },
+                    { icon: <FiEdit3 size={24} />, title: 'Body Stats', desc: 'Morning measurements', path: `/measurements/${selectedEnrollment.batchId?._id}`, color: 'var(--primary)', background: 'var(--primary-subtle)', border: 'var(--primary-glow)' },
+                    { icon: <FiActivity size={24} />, title: 'Walking Steps', desc: 'Daily movement log', path: `/daily/${selectedEnrollment.batchId?._id}`, color: 'var(--accent)', background: 'var(--accent-subtle)', border: 'var(--accent-glow)' },
+                    { icon: <GiMeal size={24} />, title: 'Track Meals', desc: 'Log your food intake', path: `/meals/${selectedEnrollment.batchId?._id}`, color: 'var(--info)', background: 'var(--info-glow)', border: 'var(--info-glow)' },
+                    { icon: <FiAward size={24} />, title: 'View Streak', desc: 'Check consistency metrics', path: `/streak/${selectedEnrollment.batchId?._id}`, color: 'var(--success)', background: 'var(--success-glow)', border: 'var(--success-glow)' },
                   ].map((action, i) => (
-                    <button key={i} className="card card-interactive" style={{ cursor: 'pointer', textAlign: 'center', border: '2px dashed var(--border-strong)' }}
+                    <button key={i} className="dashboard-action-card"
                       onClick={() => navigate(action.path)}>
-                      <div style={{ color: action.color, marginBottom: 10 }}>{action.icon}</div>
-                      <h4 style={{ fontWeight: 700, marginBottom: 4, fontSize: '0.95rem' }}>{action.title}</h4>
-                      <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{action.desc}</p>
+                      <div className="action-icon-circle" style={{ background: action.background, color: action.color, border: `1px solid ${action.border}` }}>
+                        {action.icon}
+                      </div>
+                      <h4 style={{ fontWeight: 800, marginBottom: 4, fontSize: '0.98rem', color: 'var(--text-main)' }}>{action.title}</h4>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: 0 }}>{action.desc}</p>
+                      <span className="action-card-arrow">→</span>
                     </button>
                   ))}
                 </div>
@@ -232,6 +304,147 @@ const Dashboard = () => {
                   </div>
                 </div>
 
+                {/* Today's Diet Plan Card */}
+                <div className="card glass-premium fade-in" style={{ marginBottom: 32, padding: '28px', position: 'relative', overflow: 'hidden' }}>
+                  <div className="routine-detail-glow" />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 20, position: 'relative', zIndex: 1 }}>
+                    <div>
+                      <span className="badge badge-teal" style={{ marginBottom: 6 }}>Day {selectedEnrollment.currentDay} / 21 Diet Routine</span>
+                      <h3 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
+                        🥗 Today's Meals Menu
+                      </h3>
+                    </div>
+                    {/* Veg / Non-veg switch on Dashboard */}
+                    <div style={{ display: 'flex', background: 'var(--bg-deep)', padding: 3, borderRadius: 20, border: '1px solid var(--glass-border)' }}>
+                      <button type="button" className={`diet-toggle-btn-sm ${isVeg ? 'active' : ''}`}
+                        onClick={() => setIsVeg(true)}>Veg</button>
+                      <button type="button" className={`diet-toggle-btn-sm ${!isVeg ? 'active' : ''}`}
+                        onClick={() => setIsVeg(false)}>Non-Veg</button>
+                    </div>
+                  </div>
+
+                  {activeDietRoutine[selectedEnrollment.currentDay - 1] ? (
+                    <div className="grid grid-3" style={{ gap: 16, position: 'relative', zIndex: 1 }}>
+                      {/* Breakfast */}
+                      <div className={`diet-meal-preview-box ${getActiveMealIndex() === 0 ? 'active-meal' : ''}`}>
+                        <span className="meal-emoji">🌅</span>
+                        <div className="meal-details">
+                          <h5 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {activeDietRoutine[selectedEnrollment.currentDay - 1].type === 'fasting' ? 'Meal 1' : 'Breakfast'}
+                            {getActiveMealIndex() === 0 && <span className="active-meal-badge">Current</span>}
+                          </h5>
+                          <p>{isVeg ? activeDietRoutine[selectedEnrollment.currentDay - 1].veg.breakfast : activeDietRoutine[selectedEnrollment.currentDay - 1].nonveg.breakfast}</p>
+                        </div>
+                      </div>
+
+                      {/* Lunch */}
+                      <div className={`diet-meal-preview-box ${getActiveMealIndex() === 1 ? 'active-meal' : ''}`}>
+                        <span className="meal-emoji">☀️</span>
+                        <div className="meal-details">
+                          <h5 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {activeDietRoutine[selectedEnrollment.currentDay - 1].type === 'fasting' ? 'Lemon Water' : 'Lunch'}
+                            {getActiveMealIndex() === 1 && <span className="active-meal-badge">Current</span>}
+                          </h5>
+                          <p>{isVeg ? activeDietRoutine[selectedEnrollment.currentDay - 1].veg.lunch : activeDietRoutine[selectedEnrollment.currentDay - 1].nonveg.lunch}</p>
+                        </div>
+                      </div>
+
+                      {/* Dinner */}
+                      <div className={`diet-meal-preview-box ${getActiveMealIndex() === 2 ? 'active-meal' : ''}`}>
+                        <span className="meal-emoji">🌌</span>
+                        <div className="meal-details">
+                          <h5 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {activeDietRoutine[selectedEnrollment.currentDay - 1].type === 'fasting' ? 'Meal 2' : 'Dinner'}
+                            {getActiveMealIndex() === 2 && <span className="active-meal-badge">Current</span>}
+                          </h5>
+                          <p>{isVeg ? activeDietRoutine[selectedEnrollment.currentDay - 1].veg.dinner : activeDietRoutine[selectedEnrollment.currentDay - 1].nonveg.dinner}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <p style={{ color: 'var(--text-dim)', margin: 0 }}>No diet routine seeded for this day.</p>
+                  )}
+                  
+                  {/* Option to toggle viewing full 21 days */}
+                  <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'flex-end', position: 'relative', zIndex: 1 }}>
+                    <button 
+                      className="btn btn-ghost btn-sm"
+                      style={{ borderRadius: 12, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6 }}
+                      onClick={() => setShowFullRoutine(!showFullRoutine)}
+                    >
+                      📅 {showFullRoutine ? 'Hide Full Schedule' : 'View Full Schedule'}
+                    </button>
+                  </div>
+
+                  {showFullRoutine && (
+                    <div className="fade-in" style={{ marginTop: 24, paddingTop: 24, borderTop: '1px dashed var(--glass-border)' }}>
+                      {/* Grid of Days Selector */}
+                      <div className="routine-days-container" style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+                        {(() => {
+                          const weeksMap = {};
+                          activeDietRoutine.forEach(item => {
+                            if (!weeksMap[item.week]) weeksMap[item.week] = [];
+                            weeksMap[item.week].push(item);
+                          });
+                          return Object.entries(weeksMap).map(([weekNum, days]) => (
+                            <div key={weekNum} className="routine-week-row">
+                              <span className="routine-week-label">WEEK {weekNum}</span>
+                              <div className="routine-days-row">
+                                {days.map(item => {
+                                  const d = item.day;
+                                  const isCleanse = item.type === 'cleanse';
+                                  const isFasting = item.type === 'fasting';
+                                  return (
+                                    <button 
+                                      key={d} 
+                                      className={`routine-day-dot ${routineDay === d ? 'active' : ''} ${isCleanse ? 'cleanse-day' : ''} ${isFasting ? 'fasting-day' : ''}`}
+                                      onClick={() => { setRoutineDay(d); }}
+                                    >
+                                      {d}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+
+                      {/* Selected Day Routine Card details */}
+                      {activeDietRoutine[routineDay - 1] && (
+                        <div className="routine-selected-details-container" style={{ padding: 20, background: 'var(--bg-secondary)', borderRadius: 16, border: '1px solid var(--glass-border)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+                            <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>Day {routineDay} Schedule:</span>
+                            {activeDietRoutine[routineDay - 1].rule && (
+                              <span className="badge badge-teal" style={{ fontSize: '0.72rem' }}>{activeDietRoutine[routineDay - 1].rule}</span>
+                            )}
+                          </div>
+                          <div className="grid grid-3" style={{ gap: 12 }}>
+                            <div style={{ fontSize: '0.82rem' }}>
+                              <strong style={{ color: 'var(--text-main)', display: 'block', marginBottom: 4 }}>
+                                {activeDietRoutine[routineDay - 1].type === 'fasting' ? '🌅 Meal 1:' : '🌅 Morning:'}
+                              </strong>
+                              <span style={{ color: 'var(--text-dim)' }}>{isVeg ? activeDietRoutine[routineDay - 1].veg.breakfast : activeDietRoutine[routineDay - 1].nonveg.breakfast}</span>
+                            </div>
+                            <div style={{ fontSize: '0.82rem' }}>
+                              <strong style={{ color: 'var(--text-main)', display: 'block', marginBottom: 4 }}>
+                                {activeDietRoutine[routineDay - 1].type === 'fasting' ? '☀️ Lemon Water:' : '☀️ Afternoon:'}
+                              </strong>
+                              <span style={{ color: 'var(--text-dim)' }}>{isVeg ? activeDietRoutine[routineDay - 1].veg.lunch : activeDietRoutine[routineDay - 1].nonveg.lunch}</span>
+                            </div>
+                            <div style={{ fontSize: '0.82rem' }}>
+                              <strong style={{ color: 'var(--text-main)', display: 'block', marginBottom: 4 }}>
+                                {activeDietRoutine[routineDay - 1].type === 'fasting' ? '🌌 Meal 2:' : '🌌 Evening:'}
+                              </strong>
+                              <span style={{ color: 'var(--text-dim)' }}>{isVeg ? activeDietRoutine[routineDay - 1].veg.dinner : activeDietRoutine[routineDay - 1].nonveg.dinner}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="dashboard-bottom-grid" style={{ marginBottom: 0 }}>
                   {selectedEnrollment.batchId?.guideLink && (
                     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -294,7 +507,7 @@ const Dashboard = () => {
           </>
         )}
         {/* Mandatory Measurements Overlay */}
-        {selectedEnrollment && !hasMeasurements && (
+        {selectedEnrollment && selectedEnrollment.batchId && !hasMeasurements && !skipped && (
           <div className="mandatory-overlay">
             <div className="card glass-premium fade-in" style={{ maxWidth: 500, textAlign: 'center', padding: '48px 32px' }}>
               <div style={{ fontSize: '4rem', marginBottom: 24 }}>📏</div>
@@ -304,14 +517,257 @@ const Dashboard = () => {
               </p>
               <button
                 className="btn btn-primary btn-lg"
-                style={{ width: '100%', padding: '16px' }}
-                onClick={() => navigate(`/measurements/${selectedEnrollment.batchId._id}`)}
+                style={{ width: '100%', padding: '16px', marginBottom: '12px' }}
+                onClick={() => navigate(`/measurements/${selectedEnrollment.batchId?._id}`)}
               >
                 Complete My Body Stats
               </button>
-            </div>
+              <button
+                className="btn btn-secondary"
+                style={{ width: '100%', padding: '12px' }}
+                onClick={handleSkip}
+              >
+                Skip for Now
+            </button>
           </div>
-        )}
+        </div>
+      )}
+      {/* Style injection */}
+      <style dangerouslySetInnerHTML={{ __html: `
+          .welcome-glow-bubble {
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            pointer-events: none;
+            filter: blur(35px);
+            z-index: 0;
+            opacity: 0.65;
+          }
+          .dashboard-stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+          }
+          .dashboard-stat-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-md), var(--shadow-glow);
+          }
+          .stat-icon-wrapper {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.45rem;
+            flex-shrink: 0;
+            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.05);
+          }
+          .dashboard-action-card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            text-align: left;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            font-family: inherit;
+          }
+          .dashboard-action-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-md), var(--shadow-glow);
+            background: var(--bg-secondary);
+          }
+          .action-icon-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            transition: var(--transition);
+          }
+          .dashboard-action-card:hover .action-icon-circle {
+            transform: scale(1.1) rotate(5deg);
+          }
+          .action-card-arrow {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            opacity: 0;
+            transition: var(--transition);
+            transform: translateX(-5px);
+          }
+          .dashboard-action-card:hover .action-card-arrow {
+            opacity: 1;
+            transform: translateX(0);
+            color: var(--primary);
+          }
+          .diet-toggle-btn-sm {
+            padding: 6px 14px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+            font-family: inherit;
+          }
+          .diet-toggle-btn-sm.active {
+            background: var(--primary-subtle);
+            color: var(--primary);
+          }
+          .diet-meal-preview-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            transition: var(--transition-fast);
+          }
+          .diet-meal-preview-box:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+          }
+          .diet-meal-preview-box.active-meal {
+            border-color: var(--primary);
+            background: var(--primary-subtle);
+            box-shadow: 0 0 15px var(--primary-glow);
+          }
+          .active-meal-badge {
+            font-size: 0.65rem;
+            background: var(--primary);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            display: inline-block;
+          }
+          .meal-emoji {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+          }
+          .meal-details {
+            flex: 1;
+          }
+          .meal-details h5 {
+            margin: 0 0 6px 0;
+            font-weight: 700;
+            font-size: 0.88rem;
+            color: var(--text-main);
+          }
+          .meal-details p {
+            margin: 0;
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            line-height: 1.4;
+          }
+          .routine-week-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px dashed var(--glass-border);
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+          }
+          .routine-week-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+          }
+          .routine-week-label {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: var(--primary);
+            width: 60px;
+            letter-spacing: 0.05em;
+            flex-shrink: 0;
+          }
+          .routine-days-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+          }
+          .routine-day-dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid var(--glass-border);
+            background: var(--bg-deep);
+            color: var(--text-dim);
+            font-weight: 700;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          }
+          .routine-day-dot:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-2px);
+          }
+          .routine-day-dot.active {
+            background: var(--gradient-hero);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 0 10px var(--primary-glow);
+            transform: scale(1.1);
+          }
+          .routine-day-dot.cleanse-day {
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+          }
+          .routine-day-dot.cleanse-day.active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+          }
+          .routine-day-dot.fasting-day {
+            border-color: rgba(245, 158, 11, 0.3);
+            color: #f59e0b;
+          }
+          .routine-day-dot.fasting-day.active {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+          }
+          .routine-detail-glow {
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.5;
+          }
+        `}} />
       </div>
     </div>
   );

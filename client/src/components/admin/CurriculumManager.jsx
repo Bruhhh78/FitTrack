@@ -15,7 +15,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FiPlus, FiTrash2, FiMove, FiType, FiImage, FiVideo, FiFileText, FiChevronDown, FiChevronUp, FiUpload } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiMove, FiType, FiImage, FiVideo, FiFileText, FiChevronDown, FiChevronUp, FiUpload, FiMenu, FiBookOpen } from 'react-icons/fi';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -34,21 +34,22 @@ const SortableItem = ({ id, index, moduleIndex, item, onRemove, onUpdate }) => {
     transition,
   };
 
-  const getIcon = (type) => {
+  const getIconDetails = (type) => {
     switch (type) {
-      case 'text': return <FiType />;
-      case 'image': return <FiImage />;
-      case 'video': return <FiVideo />;
-      case 'pdf': return <FiFileText />;
-      default: return <FiFileText />;
+      case 'video': return { icon: <FiVideo />, className: 'item-type-video', colorClass: 'badge-purple' };
+      case 'text': return { icon: <FiType />, className: 'item-type-text', colorClass: 'badge-blue' };
+      case 'image': return { icon: <FiImage />, className: 'item-type-image', colorClass: 'badge-cyan' };
+      case 'pdf': return { icon: <FiFileText />, className: 'item-type-pdf', colorClass: 'badge-red' };
+      default: return { icon: <FiFileText />, className: 'item-type-pdf', colorClass: 'badge-red' };
     }
   };
+
+  const { icon, className, colorClass } = getIconDetails(item.type);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Check PDF size limit (5MB)
     if (file.type === 'application/pdf' && file.size > 5 * 1024 * 1024) {
       toast.error('PDF file size should not exceed 5MB');
       return;
@@ -72,26 +73,31 @@ const SortableItem = ({ id, index, moduleIndex, item, onRemove, onUpdate }) => {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="curriculum-item-card">
-      <div className="drag-handle" {...attributes} {...listeners}>
-        <FiMove />
+    <div ref={setNodeRef} style={style} className={`curriculum-item-card ${className}`}>
+      <div className="drag-handle item-drag" {...attributes} {...listeners}>
+        <FiMenu size={16} />
       </div>
-      <div className="item-icon">{getIcon(item.type)}</div>
-      <div className="item-content">
-        <input
-          type="text"
-          className="item-title-input"
-          value={item.title}
-          onChange={(e) => onUpdate(moduleIndex, index, { title: e.target.value })}
-          placeholder="Item Title"
-        />
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div className="item-icon-container">
+        {icon}
+      </div>
+      <div className="item-content-wrapper">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            className="item-title-input"
+            value={item.title}
+            onChange={(e) => onUpdate(moduleIndex, index, { title: e.target.value })}
+            placeholder="Content Item Title"
+          />
+          <span className={`curriculum-type-badge ${colorClass}`}>{item.type}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 6 }}>
           <input
             type="text"
             className="item-url-input"
             value={item.content || ''}
             onChange={(e) => onUpdate(moduleIndex, index, { content: e.target.value })}
-            placeholder={item.type === 'text' ? 'Content/Text' : 'URL (YouTube/Image/PDF)'}
+            placeholder={item.type === 'text' ? 'Enter text content details...' : 'Paste file/media URL or upload file'}
             style={{ flex: 1 }}
           />
           {(item.type === 'image' || item.type === 'pdf') && (
@@ -103,15 +109,15 @@ const SortableItem = ({ id, index, moduleIndex, item, onRemove, onUpdate }) => {
                 accept={item.type === 'image' ? 'image/*' : '.pdf'} 
                 onChange={handleFileUpload}
               />
-              <label htmlFor={`file-${id}`} className={`upload-label ${uploading ? 'loading' : ''}`}>
-                {uploading ? '...' : <FiUpload />}
+              <label htmlFor={`file-${id}`} className={`upload-label ${uploading ? 'loading' : ''}`} title="Upload local file">
+                {uploading ? <div className="btn-spinner" /> : <FiUpload size={14} />}
               </label>
             </div>
           )}
         </div>
       </div>
-      <button type="button" className="btn-icon btn-danger-soft" onClick={() => onRemove(moduleIndex, index)}>
-        <FiTrash2 />
+      <button type="button" className="btn-icon btn-danger-soft-curriculum" onClick={() => onRemove(moduleIndex, index)} title="Remove Item">
+        <FiTrash2 size={15} />
       </button>
     </div>
   );
@@ -129,32 +135,42 @@ const SortableModule = ({ id, index, module, onRemove, onUpdate, onAddItem, onRe
 
   const [isExpanded, setIsExpanded] = useState(true);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor)
+  );
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 10 : 1,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.6 : 1,
   };
 
   return (
     <div ref={setNodeRef} style={style} className="curriculum-module-card">
       <div className="module-header">
-        <div className="drag-handle" {...attributes} {...listeners}>
-          <FiMove />
+        <div className="drag-handle module-drag" {...attributes} {...listeners} title="Drag to reorder module">
+          <FiMove size={16} />
         </div>
-        <input
-          type="text"
-          className="module-title-input"
-          value={module.title}
-          onChange={(e) => onUpdate(index, { title: e.target.value })}
-          placeholder="Module Title (e.g. Chapter 1)"
-        />
+        <div className="module-title-section">
+          <input
+            type="text"
+            className="module-title-input"
+            value={module.title}
+            onChange={(e) => onUpdate(index, { title: e.target.value })}
+            placeholder="Module Title (e.g. Week 1 Introduction)"
+          />
+          <span className="module-item-count">
+            {module.items?.length || 0} {module.items?.length === 1 ? 'item' : 'items'}
+          </span>
+        </div>
         <div className="module-actions">
-          <button type="button" className="btn-icon" onClick={() => setIsExpanded(!isExpanded)}>
-            {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+          <button type="button" className="btn-icon header-action-btn" onClick={() => setIsExpanded(!isExpanded)} title={isExpanded ? 'Collapse' : 'Expand'}>
+            {isExpanded ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
           </button>
-          <button type="button" className="btn-icon btn-danger-soft" onClick={() => onRemove(index)}>
-            <FiTrash2 />
+          <button type="button" className="btn-icon btn-danger-soft-curriculum" onClick={() => onRemove(index)} title="Delete Module">
+            <FiTrash2 size={16} />
           </button>
         </div>
       </div>
@@ -163,7 +179,7 @@ const SortableModule = ({ id, index, module, onRemove, onUpdate, onAddItem, onRe
         <div className="module-body">
           <div className="items-list">
             <DndContext
-              sensors={useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor))}
+              sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={(event) => onMoveItem(index, event)}
             >
@@ -184,12 +200,21 @@ const SortableModule = ({ id, index, module, onRemove, onUpdate, onAddItem, onRe
                 ))}
               </SortableContext>
             </DndContext>
+            {module.items.length === 0 && (
+              <div className="empty-module-placeholder">
+                <FiBookOpen size={24} style={{ opacity: 0.3, marginBottom: 8 }} />
+                <p>This module is empty. Add a content item below to get started.</p>
+              </div>
+            )}
           </div>
-          <div className="add-item-actions">
-            <button type="button" className="btn btn-xs btn-outline" onClick={() => onAddItem(index, 'video')}><FiVideo /> Video</button>
-            <button type="button" className="btn btn-xs btn-outline" onClick={() => onAddItem(index, 'text')}><FiType /> Text</button>
-            <button type="button" className="btn btn-xs btn-outline" onClick={() => onAddItem(index, 'image')}><FiImage /> Image</button>
-            <button type="button" className="btn btn-xs btn-outline" onClick={() => onAddItem(index, 'pdf')}><FiFileText /> PDF</button>
+          <div className="add-item-container">
+            <span className="add-item-label">Add Content Item:</span>
+            <div className="add-item-actions">
+              <button type="button" className="add-btn add-btn-video" onClick={() => onAddItem(index, 'video')}><FiVideo size={13} /> Video</button>
+              <button type="button" className="add-btn add-btn-text" onClick={() => onAddItem(index, 'text')}><FiType size={13} /> Text</button>
+              <button type="button" className="add-btn add-btn-image" onClick={() => onAddItem(index, 'image')}><FiImage size={13} /> Image</button>
+              <button type="button" className="add-btn add-btn-pdf" onClick={() => onAddItem(index, 'pdf')}><FiFileText size={13} /> PDF</button>
+            </div>
           </div>
         </div>
       )}
@@ -244,7 +269,7 @@ const CurriculumManager = ({ curriculum = [], onChange }) => {
     const newCurriculum = [...curriculum];
     const newItem = {
       type,
-      title: `New ${type}`,
+      title: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
       content: '',
       order: newCurriculum[moduleIndex].items.length
     };
@@ -278,12 +303,17 @@ const CurriculumManager = ({ curriculum = [], onChange }) => {
     }
   };
 
+  const totalItems = curriculum.reduce((acc, m) => acc + (m.items?.length || 0), 0);
+
   return (
-    <div className="curriculum-manager">
+    <div className="curriculum-manager-container">
       <div className="manager-header">
-        <h4>Curriculum Structure</h4>
-        <button type="button" className="btn btn-sm btn-primary" onClick={addModule}>
-          <FiPlus /> Add Module
+        <div>
+          <h4 className="manager-title">Curriculum Modules</h4>
+          <span className="manager-subtitle">{curriculum.length} Modules • {totalItems} Content Items</span>
+        </div>
+        <button type="button" className="btn btn-sm btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={addModule}>
+          <FiPlus size={16} /> Add Module
         </button>
       </div>
 
@@ -298,8 +328,13 @@ const CurriculumManager = ({ curriculum = [], onChange }) => {
         >
           <div className="modules-list">
             {curriculum.length === 0 && (
-              <div className="empty-curriculum">
-                <p>No curriculum added yet. Click "Add Module" to start.</p>
+              <div className="empty-curriculum-panel">
+                <FiBookOpen size={48} className="empty-icon" />
+                <h3>No curriculum added yet</h3>
+                <p>Start organizing your program's curriculum path by adding a module below.</p>
+                <button type="button" className="btn btn-outline" style={{ marginTop: 16 }} onClick={addModule}>
+                  <FiPlus /> Add First Module
+                </button>
               </div>
             )}
             {curriculum.map((module, index) => (
@@ -321,114 +356,235 @@ const CurriculumManager = ({ curriculum = [], onChange }) => {
       </DndContext>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .curriculum-manager {
-          margin-top: 20px;
-          border: 1px solid var(--glass-border);
-          border-radius: var(--radius-md);
-          padding: 24px;
-          background: var(--bg-dark);
+        .curriculum-manager-container {
+          margin-top: 16px;
         }
         .manager-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-bottom: 24px;
+          background: var(--bg-card);
+          padding: 20px 24px;
+          border-radius: var(--radius-md);
+          border: 1px solid var(--glass-border);
+          box-shadow: var(--shadow-sm);
+        }
+        .manager-title {
+          font-family: 'Outfit', sans-serif;
+          font-weight: 800;
+          font-size: 1.15rem;
+          margin: 0 0 2px 0;
+          color: var(--text-main);
+        }
+        .manager-subtitle {
+          font-size: 0.8rem;
+          color: var(--text-muted);
         }
         .modules-list {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 20px;
         }
         .curriculum-module-card {
           background: var(--bg-card);
           border: 1px solid var(--glass-border);
           border-radius: var(--radius-md);
           overflow: hidden;
+          box-shadow: var(--shadow-md);
+          transition: transform 0.25s, box-shadow 0.25s;
+        }
+        .curriculum-module-card:hover {
+          box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+          border-color: rgba(139, 92, 246, 0.25);
         }
         .module-header {
           display: flex;
           align-items: center;
-          padding: 12px 16px;
-          background: rgba(255, 255, 255, 0.02);
+          padding: 16px 20px;
+          background: linear-gradient(90deg, rgba(139, 92, 246, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
           border-bottom: 1px solid var(--glass-border);
+          gap: 16px;
+        }
+        .module-title-section {
+          flex: 1;
+          display: flex;
+          align-items: center;
           gap: 12px;
         }
         .drag-handle {
           cursor: grab;
-          color: var(--text-muted);
+          color: var(--text-dim);
           display: flex;
           align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          border-radius: 6px;
+          background: rgba(255, 255, 255, 0.03);
+          transition: all 0.2s;
+        }
+        .drag-handle:hover {
+          background: rgba(255, 255, 255, 0.08);
+          color: var(--text-main);
+        }
+        .drag-handle:active {
+          cursor: grabbing;
+          background: var(--primary-subtle);
+          color: var(--primary);
         }
         .module-title-input {
-          flex: 1;
-          background: transparent;
-          border: none;
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid transparent;
           font-weight: 700;
           color: var(--text-main);
-          padding: 6px 10px;
+          padding: 8px 12px;
           font-family: inherit;
+          font-size: 0.95rem;
+          border-radius: var(--radius-sm);
+          width: 70%;
+          max-width: 400px;
+          transition: all 0.2s;
+        }
+        .module-title-input:hover {
+          background: rgba(255, 255, 255, 0.05);
         }
         .module-title-input:focus {
-          outline: 1px solid var(--primary);
-          border-radius: 6px;
-          background: rgba(0,0,0,0.2);
+          background: rgba(0, 0, 0, 0.35);
+          border-color: var(--primary);
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+        }
+        .module-item-count {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--primary);
+          background: var(--primary-subtle);
+          padding: 4px 10px;
+          border-radius: var(--radius-full);
+          border: 1px solid rgba(139, 92, 246, 0.2);
         }
         .module-actions {
           display: flex;
-          gap: 6px;
+          gap: 8px;
+        }
+        .header-action-btn {
+          color: var(--text-main) !important;
         }
         .module-body {
-          padding: 16px;
-          background: transparent;
+          padding: 20px;
+          background: rgba(0, 0, 0, 0.08);
         }
         .items-list {
           display: flex;
           flex-direction: column;
-          gap: 10px;
-          margin-bottom: 16px;
+          gap: 12px;
+          margin-bottom: 20px;
         }
         .curriculum-item-card {
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 12px 16px;
+          gap: 14px;
+          padding: 12px 18px;
           background: var(--bg-deep);
           border: 1px solid var(--glass-border);
-          border-radius: var(--radius-sm);
+          border-radius: var(--radius-md);
+          transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
         }
-        .item-icon {
-          color: var(--primary);
+        .curriculum-item-card:hover {
+          transform: translateX(4px);
+          box-shadow: var(--shadow-sm);
+        }
+        .item-type-video {
+          border-left: 4px solid var(--primary);
+        }
+        .item-type-text {
+          border-left: 4px solid var(--info);
+        }
+        .item-type-image {
+          border-left: 4px solid var(--accent);
+        }
+        .item-type-pdf {
+          border-left: 4px solid var(--danger);
+        }
+        .item-icon-container {
           display: flex;
-          font-size: 1.1rem;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.04);
+          color: var(--text-main);
         }
-        .item-content {
+        .item-type-video .item-icon-container { color: var(--secondary); background: rgba(139, 92, 246, 0.1); }
+        .item-type-text .item-icon-container { color: var(--info); background: rgba(59, 130, 246, 0.1); }
+        .item-type-image .item-icon-container { color: var(--accent); background: rgba(6, 182, 212, 0.1); }
+        .item-type-pdf .item-icon-container { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+
+        .item-content-wrapper {
           flex: 1;
           display: flex;
           flex-direction: column;
-          gap: 4px;
         }
         .item-title-input {
           background: transparent;
           border: none;
-          font-size: 0.95rem;
-          font-weight: 600;
+          font-size: 0.9rem;
+          font-weight: 700;
           color: var(--text-main);
           font-family: inherit;
+          padding: 2px 6px;
+          border-radius: 4px;
+          width: auto;
+          min-width: 150px;
+          transition: all 0.2s;
         }
+        .item-title-input:hover {
+          background: rgba(255, 255, 255, 0.04);
+        }
+        .item-title-input:focus {
+          outline: none;
+          background: rgba(0, 0, 0, 0.25);
+          box-shadow: 0 0 0 2px var(--primary-glow);
+        }
+        .curriculum-type-badge {
+          font-size: 0.62rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          padding: 2px 8px;
+          border-radius: var(--radius-full);
+          border: 1px solid transparent;
+        }
+        .badge-purple { color: var(--secondary); background: rgba(139, 92, 246, 0.12); border-color: rgba(139, 92, 246, 0.2); }
+        .badge-blue { color: var(--info); background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.2); }
+        .badge-cyan { color: var(--accent); background: rgba(6, 182, 212, 0.12); border-color: rgba(6, 182, 212, 0.2); }
+        .badge-red { color: var(--danger); background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.2); }
+
         .item-url-input {
-          background: transparent;
-          border: none;
-          font-size: 0.8rem;
+          background: rgba(255, 255, 255, 0.01);
+          border: 1px solid var(--glass-border);
+          border-radius: 6px;
+          font-size: 0.78rem;
           color: var(--text-dim);
           font-family: inherit;
+          padding: 6px 12px;
+          transition: all 0.2s;
         }
-        .item-title-input:focus, .item-url-input:focus {
+        .item-url-input:hover {
+          border-color: rgba(255, 255, 255, 0.1);
+        }
+        .item-url-input:focus {
           outline: none;
-          color: var(--primary);
+          color: var(--text-main);
+          border-color: var(--primary);
+          background: rgba(0, 0, 0, 0.25);
+          box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
         }
         .btn-icon {
-          background: rgba(255, 255, 255, 0.05);
-          border: none;
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid var(--glass-border);
           color: var(--text-dim);
           cursor: pointer;
           width: 32px;
@@ -437,31 +593,101 @@ const CurriculumManager = ({ curriculum = [], onChange }) => {
           align-items: center;
           justify-content: center;
           border-radius: 8px;
-          transition: var(--transition);
+          transition: all 0.2s;
         }
         .btn-icon:hover {
-          background: var(--primary);
-          color: #000;
+          background: rgba(255, 255, 255, 0.1);
+          color: var(--text-main);
         }
-        .btn-danger-soft:hover {
-          background: #ef4444 !important;
-          color: white !important;
+        .btn-danger-soft-curriculum {
+          background: rgba(239, 68, 68, 0.05);
+          border: 1px solid rgba(239, 68, 68, 0.1);
+          color: #fca5a5;
+          cursor: pointer;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          transition: all 0.2s;
+        }
+        .btn-danger-soft-curriculum:hover {
+          background: var(--danger);
+          border-color: var(--danger);
+          color: #fff;
+        }
+        .empty-module-placeholder {
+          text-align: center;
+          padding: 24px;
+          color: var(--text-muted);
+          border: 1px dashed var(--glass-border);
+          border-radius: var(--radius-md);
+          font-size: 0.8rem;
+        }
+        .add-item-container {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding-top: 16px;
+          border-top: 1px solid var(--glass-border);
+          flex-wrap: wrap;
+        }
+        .add-item-label {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: var(--text-dim);
         }
         .add-item-actions {
           display: flex;
           gap: 10px;
           flex-wrap: wrap;
         }
-        .btn-xs {
+        .add-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
           padding: 6px 12px;
           font-size: 0.75rem;
+          font-weight: 600;
+          border-radius: 6px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid var(--glass-border);
+          color: var(--text-dim);
+          cursor: pointer;
+          transition: all 0.2s;
         }
-        .empty-curriculum {
+        .add-btn:hover {
+          transform: translateY(-1px);
+        }
+        .add-btn-video:hover { color: #c084fc; background: rgba(139, 92, 246, 0.08); border-color: rgba(139, 92, 246, 0.3); }
+        .add-btn-text:hover { color: #60a5fa; background: rgba(59, 130, 246, 0.08); border-color: rgba(59, 130, 246, 0.3); }
+        .add-btn-image:hover { color: #22d3ee; background: rgba(6, 182, 212, 0.08); border-color: rgba(6, 182, 212, 0.3); }
+        .add-btn-pdf:hover { color: #f87171; background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.3); }
+
+        .empty-curriculum-panel {
           text-align: center;
-          padding: 40px;
+          padding: 48px 24px;
           color: var(--text-muted);
           border: 2px dashed var(--glass-border);
           border-radius: var(--radius-md);
+          background: var(--bg-card);
+        }
+        .empty-icon {
+          opacity: 0.15;
+          margin-bottom: 16px;
+          color: var(--primary);
+        }
+        .empty-curriculum-panel h3 {
+          font-family: 'Outfit', sans-serif;
+          font-weight: 700;
+          color: var(--text-main);
+          margin-bottom: 8px;
+        }
+        .empty-curriculum-panel p {
+          max-width: 400px;
+          margin: 0 auto;
+          font-size: 0.85rem;
         }
         .upload-label {
           display: flex;
@@ -470,19 +696,30 @@ const CurriculumManager = ({ curriculum = [], onChange }) => {
           width: 32px;
           height: 32px;
           border-radius: 8px;
-          background: rgba(245, 158, 11, 0.1);
-          border: 1px solid var(--primary-glow);
-          color: var(--primary);
+          background: rgba(6, 182, 212, 0.08);
+          border: 1px solid var(--accent-glow);
+          color: var(--accent);
           cursor: pointer;
           transition: all 0.2s;
         }
         .upload-label:hover {
-          background: var(--primary);
+          background: var(--accent);
           color: #000;
         }
         .upload-label.loading {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+        .btn-spinner {
+          width: 14px;
+          height: 14px;
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}} />
     </div>

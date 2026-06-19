@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const User = require('./models/User');
 
 const ADMIN_NAME = 'Admin';
-const ADMIN_EMAIL = 'a@a.com';
+const ADMIN_EMAIL = 'anmolsrivastava678@gmail.com';
 const ADMIN_PASSWORD = 'password123';
 
 const seedAdmin = async () => {

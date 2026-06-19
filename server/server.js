@@ -35,7 +35,7 @@ app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 // --- EMAIL TESTING ROUTES ---
-const { sendWelcomeEmail, sendDailyReminder, sendAdminAlert } = require('./utils/email');
+const { sendWelcomeEmail, sendDailyReminder, sendAdminAlert, sendAdminEnrollmentNotification } = require('./utils/email');
 const User = require('./models/User');
 
 app.get('/api/test-email/:type', async (req, res) => {
@@ -54,6 +54,10 @@ app.get('/api/test-email/:type', async (req, res) => {
     if (req.params.type === 'admin-alert') {
       await sendAdminAlert(testUser.email, { name: 'Demo User', email: 'user@example.com', batchName: 'Prayas Batch' }, 2);
       return res.json({ message: 'Admin alert sent to ' + testUser.email });
+    }
+    if (req.params.type === 'enrollment') {
+      await sendAdminEnrollmentNotification(testUser.email, { name: 'Anmol Srivastava', email: 'srivastavaanmol091@gmail.com', phone: '9876543210' }, 'Prayas Premium Batch', 'VPA / UPI');
+      return res.json({ message: 'Enrollment notification sent to ' + testUser.email });
     }
     res.status(400).json({ message: 'Invalid email type' });
   } catch (error) {

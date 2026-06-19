@@ -47,7 +47,7 @@ const initAdminAlerts = () => {
 
       // Find the admin user
       const admin = await User.findOne({ role: 'admin' });
-      if (!admin) return;
+      const adminEmail = admin ? admin.email : 'anmolsrivastava678@gmail.com';
 
       const twoDaysAgo = new Date();
       twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
@@ -64,7 +64,7 @@ const initAdminAlerts = () => {
             ? Math.floor((new Date() - lastUpdate.createdAt) / (1000 * 60 * 60 * 24))
             : 'ever';
             
-          sendAdminAlert(admin.email, {
+          sendAdminAlert(adminEmail, {
             name: enrollment.userId.name,
             email: enrollment.userId.email,
             batchName: enrollment.batchId.title

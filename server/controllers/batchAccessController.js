@@ -25,6 +25,18 @@ const validateToken = async (req, res) => {
       await Streak.create({ userId, batchId });
     }
 
+    // Send Welcome Email
+    const { sendWelcomeEmail, sendAdminEnrollmentNotification } = require('../utils/email');
+    sendWelcomeEmail(req.user).catch(err => console.error('Welcome email error (Token):', err));
+
+    // Send Admin Notification
+    const Batch = require('../models/Batch');
+    Batch.findById(batchId).then(batch => {
+      const batchTitle = batch ? batch.title : 'Program';
+      sendAdminEnrollmentNotification('anmolsrivastava678@gmail.com', req.user, batchTitle, 'Access Token')
+        .catch(err => console.error('Admin notification error (Token):', err));
+    }).catch(err => console.error('Error fetching batch for admin notification (Token):', err));
+
     res.json({ success: true, message: 'Access granted successfully!', enrollment });
   } catch (error) {
     res.status(500).json({ message: error.message });

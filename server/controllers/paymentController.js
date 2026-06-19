@@ -106,6 +106,17 @@ const verifyPayment = async (req, res) => {
       await Streak.create({ userId, batchId });
     }
 
+    // Send Welcome Email
+    const { sendWelcomeEmail, sendAdminEnrollmentNotification } = require('../utils/email');
+    sendWelcomeEmail(req.user).catch(err => console.error('Welcome email error (Razorpay):', err));
+    
+    // Send Admin Notification
+    Batch.findById(batchId).then(batch => {
+      const batchTitle = batch ? batch.title : 'Program';
+      sendAdminEnrollmentNotification('anmolsrivastava678@gmail.com', req.user, batchTitle, 'Razorpay Payment')
+        .catch(err => console.error('Admin notification error (Razorpay):', err));
+    }).catch(err => console.error('Error fetching batch for admin notification (Razorpay):', err));
+
     res.json({
       success: true,
       message: 'Payment verified and enrollment activated!',

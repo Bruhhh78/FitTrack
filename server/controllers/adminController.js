@@ -189,6 +189,13 @@ const allotBatch = async (req, res) => {
       link: '/batches'
     });
 
+    // Send Welcome Email
+    const user = await User.findById(userId);
+    if (user) {
+      const { sendWelcomeEmail } = require('../utils/email');
+      sendWelcomeEmail(user).catch(err => console.error('Welcome email error (Allot):', err));
+    }
+
     res.json({ success: true, message: 'Batch alloted successfully', enrollment });
   } catch (error) { res.status(500).json({ message: error.message }); }
 };

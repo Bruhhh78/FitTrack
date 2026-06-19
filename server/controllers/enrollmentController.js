@@ -89,6 +89,12 @@ const createEnrollment = async (req, res) => {
       batchId,
     });
 
+    // Send Welcome Email & Admin Notification
+    const { sendWelcomeEmail, sendAdminEnrollmentNotification } = require('../utils/email');
+    sendWelcomeEmail(req.user).catch(err => console.error('Welcome email error (Manual API):', err));
+    sendAdminEnrollmentNotification('anmolsrivastava678@gmail.com', req.user, batch.title, 'Direct API Enrollment')
+      .catch(err => console.error('Admin notification error (Manual API):', err));
+
     res.status(201).json({ success: true, enrollment });
   } catch (error) {
     res.status(500).json({ message: error.message });
