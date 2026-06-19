@@ -27,7 +27,7 @@ const Dashboard = () => {
     api.get('/enrollments/my').then(r => {
       const data = r.data.enrollments;
       setEnrollments(data);
-      
+
       if (batchId) {
         const found = data.find(e => e.batchId._id === batchId);
         if (found) setSelectedEnrollment(found);
@@ -35,7 +35,7 @@ const Dashboard = () => {
       } else if (data.length > 0) {
         setSelectedEnrollment(data[0]);
       }
-      
+
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [batchId]);
@@ -72,10 +72,10 @@ const Dashboard = () => {
 
   return (
     <div className="page-wrapper">
-      <div className="container" style={{ paddingTop: 32, paddingBottom: 20, paddingLeft: 40, paddingRight: 40 }}>
+      <div className="container" style={{ paddingTop: 32, paddingBottom: 40, maxWidth: 1100, margin: '0 auto' }}>
         {/* Header */}
         <div className="fade-in" style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 4, color: 'var(--text-main)' }}>Welcome back, {user?.name?.split(' ')[0]} 👋</h1>
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 4 }}>Welcome back, {user?.name?.split(' ')[0]} 👋</h1>
           <p style={{ color: 'var(--text-muted)' }}>Track your progress and stay consistent.</p>
         </div>
 
@@ -83,7 +83,7 @@ const Dashboard = () => {
           <div className="empty-state card">
             <div className="empty-state-icon">🏋️</div>
             <h3>No Active Programs</h3>
-            <p>Browse our weight loss programs to get started!</p>
+            <p style={{ color: 'var(--text-dim)', marginBottom: 20 }}>Browse our weight loss programs to get started!</p>
             <Link to="/batches" className="btn btn-primary">Browse Programs <FiArrowRight /></Link>
           </div>
         ) : (
@@ -101,142 +101,133 @@ const Dashboard = () => {
             {selectedEnrollment && (
               <div className="fade-in">
                 {/* Stats row */}
-                <div className="grid grid-4" style={{ marginBottom: 32 }}>
+                <div className="grid grid-4" style={{ marginBottom: 28 }}>
                   <div className="card stat-card">
-                    <div className="stat-icon"><FiActivity /></div>
+                    <div className="stat-icon" style={{ background: 'var(--primary-subtle)', color: 'var(--primary)' }}><FiActivity /></div>
                     <div><div className="stat-value">{streak?.currentStreak || 0}</div><div className="stat-label">Current Streak</div></div>
                   </div>
                   <div className="card stat-card">
-                    <div className="stat-icon" style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}><FiAward /></div>
+                    <div className="stat-icon" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}><FiAward /></div>
                     <div><div className="stat-value">{streak?.longestStreak || 0}</div><div className="stat-label">Longest Streak</div></div>
                   </div>
                   <div className="card stat-card">
-                    <div className="stat-icon" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}><FiCalendar /></div>
+                    <div className="stat-icon" style={{ background: 'var(--info-glow)', color: 'var(--info)' }}><FiCalendar /></div>
                     <div><div className="stat-value">{streak?.completedDays?.length || 0}</div><div className="stat-label">Days Logged</div></div>
                   </div>
                   <div className="card stat-card">
-                    <div className="stat-icon" style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981' }}><FiTarget /></div>
+                    <div className="stat-icon" style={{ background: 'var(--success-glow)', color: 'var(--success)' }}><FiTarget /></div>
                     <div><div className="stat-value">{selectedEnrollment.progress || 0}%</div><div className="stat-label">Progress</div></div>
                   </div>
                 </div>
 
                 {/* Progress bar */}
                 <div className="card" style={{ marginBottom: 24 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <h3 style={{ fontWeight: 700, color: 'var(--text-main)' }}>{selectedEnrollment.batchId?.title}</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                    <h3 style={{ fontWeight: 700 }}>{selectedEnrollment.batchId?.title}</h3>
                     <span className="badge badge-teal">Day {selectedEnrollment.currentDay} / {selectedEnrollment.batchId?.duration} {selectedEnrollment.batchId?.durationType}</span>
                   </div>
                   <div className="progress-bar-container">
                     <div className="progress-bar-fill" style={{ width: `${Math.min(100, (selectedEnrollment.currentDay / (selectedEnrollment.batchId?.duration || 1)) * 100)}%` }} />
                   </div>
-                  <button 
-                    className="btn btn-primary" 
-                    style={{ width: '100%', marginTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: '1.1rem', padding: '12px' }}
+                  <button
+                    className="btn btn-primary"
+                    style={{ width: '100%', marginTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: '1.05rem', padding: '14px' }}
                     onClick={() => navigate(`/learn/${selectedEnrollment.batchId._id}`)}
                   >
-                    <FiPlayCircle size={24} /> Start Batch Session
+                    <FiPlayCircle size={22} /> Start Batch Session
                   </button>
                 </div>
 
                 {/* Quick actions */}
-                <h3 style={{ fontWeight: 700, marginBottom: 16, color: 'var(--text-main)' }}>Quick Actions</h3>
+                <h3 style={{ fontWeight: 700, marginBottom: 16 }}>Quick Actions</h3>
                 <div className="grid grid-4" style={{ marginBottom: 32 }}>
-                  <button className="card card-interactive" style={{ cursor: 'pointer', textAlign: 'center', border: '2px dashed var(--border-strong)' }}
-                    onClick={() => navigate(`/measurements/${selectedEnrollment.batchId._id}`)}>
-                    <FiEdit3 size={28} style={{ color: 'var(--accent)', marginBottom: 8 }} />
-                    <h4 style={{ fontWeight: 600, marginBottom: 4, color: 'var(--text-main)' }}>Body Stats</h4>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Morning measurements</p>
-                  </button>
-                  <button className="card card-interactive" style={{ cursor: 'pointer', textAlign: 'center', border: '2px dashed var(--border-strong)' }}
-                    onClick={() => navigate(`/daily/${selectedEnrollment.batchId._id}`)}>
-                    <FiActivity size={28} style={{ color: 'var(--accent)', marginBottom: 8 }} />
-                    <h4 style={{ fontWeight: 600, marginBottom: 4, color: 'var(--text-main)' }}>Walking Steps</h4>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Daily movement log</p>
-                  </button>
-                  <button className="card card-interactive" style={{ cursor: 'pointer', textAlign: 'center', border: '2px dashed var(--border-strong)' }}
-                    onClick={() => navigate(`/meals/${selectedEnrollment.batchId._id}`)}>
-                    <GiMeal size={28} style={{ color: 'var(--accent)', marginBottom: 8 }} />
-                    <h4 style={{ fontWeight: 600, marginBottom: 4, color: 'var(--text-main)' }}>Track Meals</h4>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Log your food</p>
-                  </button>
-                  <button className="card card-interactive" style={{ cursor: 'pointer', textAlign: 'center', border: '2px dashed var(--border-strong)' }}
-                    onClick={() => navigate(`/streak/${selectedEnrollment.batchId._id}`)}>
-                    <FiAward size={28} style={{ color: 'var(--accent)', marginBottom: 8 }} />
-                    <h4 style={{ fontWeight: 600, marginBottom: 4, color: 'var(--text-main)' }}>View Streak</h4>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Check consistency</p>
-                  </button>
+                  {[
+                    { icon: <FiEdit3 size={26} />, title: 'Body Stats', desc: 'Morning measurements', path: `/measurements/${selectedEnrollment.batchId._id}`, color: 'var(--primary)' },
+                    { icon: <FiActivity size={26} />, title: 'Walking Steps', desc: 'Daily movement log', path: `/daily/${selectedEnrollment.batchId._id}`, color: 'var(--accent)' },
+                    { icon: <GiMeal size={26} />, title: 'Track Meals', desc: 'Log your food', path: `/meals/${selectedEnrollment.batchId._id}`, color: 'var(--info)' },
+                    { icon: <FiAward size={26} />, title: 'View Streak', desc: 'Check consistency', path: `/streak/${selectedEnrollment.batchId._id}`, color: 'var(--success)' },
+                  ].map((action, i) => (
+                    <button key={i} className="card card-interactive" style={{ cursor: 'pointer', textAlign: 'center', border: '2px dashed var(--border-strong)' }}
+                      onClick={() => navigate(action.path)}>
+                      <div style={{ color: action.color, marginBottom: 10 }}>{action.icon}</div>
+                      <h4 style={{ fontWeight: 700, marginBottom: 4, fontSize: '0.95rem' }}>{action.title}</h4>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{action.desc}</p>
+                    </button>
+                  ))}
                 </div>
 
                 {/* Daily Updates Summary */}
-                <h3 style={{ fontWeight: 700, marginBottom: 16, color: 'var(--text-main)' }}>Today's Summary</h3>
-                
+                <h3 style={{ fontWeight: 700, marginBottom: 16 }}>Today's Summary</h3>
+
                 {todayStats && todayStats.stepsCount > 0 && todayMeals?.meals?.length >= 3 && (
-                  <div className="card fade-in" style={{ 
-                    marginBottom: 24, 
-                    padding: '40px', 
+                  <div className="card fade-in" style={{
+                    marginBottom: 24,
+                    padding: '40px',
                     textAlign: 'center',
-                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(249, 115, 22, 0.1) 100%)',
+                    background: 'var(--gradient-hero-subtle)',
                     border: '2px solid var(--primary)',
-                    boxShadow: '0 0 30px var(--primary-glow)'
+                    boxShadow: '0 0 40px var(--primary-glow)'
                   }}>
                     <div style={{ fontSize: '3rem', marginBottom: 16 }}>🎉</div>
-                    <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--primary)', marginBottom: 8 }}>Congratulations!</h2>
-                    <p style={{ fontSize: '1rem', color: 'var(--text-main)', maxWidth: 500, margin: '0 auto' }}>
+                    <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: 8 }}>
+                      <span className="text-gradient">Congratulations!</span>
+                    </h2>
+                    <p style={{ fontSize: '1rem', color: 'var(--text-dim)', maxWidth: 500, margin: '0 auto' }}>
                       You've completed your day with absolute discipline. Stay consistent!
                     </p>
                   </div>
                 )}
 
                 <div className="card glass-premium fade-in" style={{ marginBottom: 32, padding: '32px' }}>
-                    <div className="grid grid-3" style={{ gap: 32 }}>
-                      {/* Body Stats Status */}
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '2rem', marginBottom: 12 }}>📏</div>
-                        <h4 style={{ marginBottom: 8 }}>Body Stats</h4>
-                        {todayStats ? (
-                          <div className="badge badge-success" style={{ margin: '0 auto' }}>✓ Completed</div>
-                        ) : (
-                          <div className="badge badge-warning" style={{ margin: '0 auto' }}>Pending</div>
-                        )}
-                        <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem', marginTop: 12 }}>
-                          {todayStats ? `Logged at ${new Date(todayStats.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Required every morning'}
-                        </p>
-                      </div>
+                  <div className="grid grid-3" style={{ gap: 32 }}>
+                    {/* Body Stats Status */}
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '2rem', marginBottom: 12 }}>📏</div>
+                      <h4 style={{ marginBottom: 8 }}>Body Stats</h4>
+                      {todayStats ? (
+                        <div className="badge badge-success" style={{ margin: '0 auto' }}>✓ Completed</div>
+                      ) : (
+                        <div className="badge badge-warning" style={{ margin: '0 auto' }}>Pending</div>
+                      )}
+                      <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem', marginTop: 12 }}>
+                        {todayStats ? `Logged at ${new Date(todayStats.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Required every morning'}
+                      </p>
+                    </div>
 
-                      {/* Steps Status */}
-                      <div className="dashboard-summary-item mobile-border-none" style={{ textAlign: 'center', borderLeft: '1px solid var(--glass-border)', borderRight: '1px solid var(--glass-border)' }}>
-                        <div style={{ fontSize: '2rem', marginBottom: 12 }}>🚶</div>
-                        <h4 style={{ marginBottom: 8 }}>Walking Steps</h4>
-                        {todayStats?.stepsCount ? (
-                          <div className="badge badge-success" style={{ margin: '0 auto' }}>✓ {todayStats.stepsCount} Steps</div>
-                        ) : (
-                          <div className="badge badge-warning" style={{ margin: '0 auto' }}>Pending</div>
-                        )}
-                        <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem', marginTop: 12 }}>
-                          Daily movement target
-                        </p>
-                      </div>
+                    {/* Steps Status */}
+                    <div className="dashboard-summary-item mobile-border-none" style={{ textAlign: 'center', borderLeft: '1px solid var(--glass-border)', borderRight: '1px solid var(--glass-border)' }}>
+                      <div style={{ fontSize: '2rem', marginBottom: 12 }}>🚶</div>
+                      <h4 style={{ marginBottom: 8 }}>Walking Steps</h4>
+                      {todayStats?.stepsCount ? (
+                        <div className="badge badge-success" style={{ margin: '0 auto' }}>✓ {todayStats.stepsCount} Steps</div>
+                      ) : (
+                        <div className="badge badge-warning" style={{ margin: '0 auto' }}>Pending</div>
+                      )}
+                      <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem', marginTop: 12 }}>
+                        Daily movement target
+                      </p>
+                    </div>
 
-                      {/* Meals Status */}
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '2rem', marginBottom: 12 }}>🍱</div>
-                        <h4 style={{ marginBottom: 8 }}>Meal Tracking</h4>
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 12 }}>
-                          {['breakfast', 'lunch', 'dinner'].map(type => {
-                            const isLogged = todayMeals?.meals?.some(m => m.type === type);
-                            return (
-                              <div key={type} 
-                                className={`meal-status-dot ${isLogged ? 'active' : ''}`}
-                                title={type.charAt(0).toUpperCase() + type.slice(1)}
-                              >
-                                {type.charAt(0).toUpperCase()}
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>
-                          {todayMeals?.meals?.length || 0} / 3 Meals Logged
-                        </p>
+                    {/* Meals Status */}
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '2rem', marginBottom: 12 }}>🍱</div>
+                      <h4 style={{ marginBottom: 8 }}>Meal Tracking</h4>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 12 }}>
+                        {['breakfast', 'lunch', 'dinner'].map(type => {
+                          const isLogged = todayMeals?.meals?.some(m => m.type === type);
+                          return (
+                            <div key={type}
+                              className={`meal-status-dot ${isLogged ? 'active' : ''}`}
+                              title={type.charAt(0).toUpperCase() + type.slice(1)}
+                            >
+                              {type.charAt(0).toUpperCase()}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>
+                        {todayMeals?.meals?.length || 0} / 3 Meals Logged
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -262,12 +253,12 @@ const Dashboard = () => {
                   <div className="card streak-calendar-card" style={{ padding: 24 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                       <div>
-                        <h3 style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '1.1rem', letterSpacing: '-0.02em' }}>Activity</h3>
+                        <h3 style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.02em' }}>Activity</h3>
                         <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>Daily Consistency</p>
                       </div>
                       <div className="streak-badge-glass">
-                         <span className="flame-icon">🔥</span>
-                         <span className="streak-number">{streak?.currentStreak || 0}</span>
+                        <span className="flame-icon">🔥</span>
+                        <span className="streak-number">{streak?.currentStreak || 0}</span>
                       </div>
                     </div>
 
@@ -275,12 +266,12 @@ const Dashboard = () => {
                       <div className="github-streak-grid">
                         {Array.from({ length: selectedEnrollment.batchId?.duration || 21 }).map((_, i) => {
                           const dayNum = i + 1;
-                          const isCompleted = dayNum <= (streak?.currentStreak || 0); 
+                          const isCompleted = dayNum <= (streak?.currentStreak || 0);
                           const isToday = dayNum === selectedEnrollment.currentDay;
-                          
+
                           return (
-                            <div 
-                              key={i} 
+                            <div
+                              key={i}
                               className={`streak-square ${isCompleted ? 'completed' : ''} ${isToday ? 'today' : ''}`}
                               title={`Day ${dayNum}`}
                             />
@@ -290,11 +281,11 @@ const Dashboard = () => {
                     </div>
 
                     <div className="streak-status-footer">
-                        {streak?.currentStreak > 0 ? (
-                          <><span className="dot animate-pulse"></span> You're on a {streak.currentStreak} day streak!</>
-                        ) : (
-                          "Log your first activity to start your streak!"
-                        )}
+                      {streak?.currentStreak > 0 ? (
+                        <><span className="dot animate-pulse"></span> You're on a {streak.currentStreak} day streak!</>
+                      ) : (
+                        "Log your first activity to start your streak!"
+                      )}
                     </div>
                   </div>
                 </div>
@@ -311,8 +302,8 @@ const Dashboard = () => {
               <p style={{ color: 'var(--text-dim)', marginBottom: 32 }}>
                 Consistency is key! Please log your body measurements and progress for today to unlock your dashboard and continue your streak.
               </p>
-              <button 
-                className="btn btn-primary btn-lg" 
+              <button
+                className="btn btn-primary btn-lg"
                 style={{ width: '100%', padding: '16px' }}
                 onClick={() => navigate(`/measurements/${selectedEnrollment.batchId._id}`)}
               >

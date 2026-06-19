@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
-import { FiUpload, FiSave, FiTrash2 } from 'react-icons/fi';
+import { FiUpload, FiSave } from 'react-icons/fi';
 
 const fields = [
   { key: 'face', label: 'Face (cm)' }, { key: 'neck', label: 'Neck (cm)' },
@@ -29,10 +29,6 @@ const MeasurementForm = () => {
     api.get(`/measurements/today/${batchId}?date=${todayStr}`).then(r => {
       if (r.data.measurement) {
         const m = r.data.measurement;
-        const latestDate = new Date(m.date).toDateString();
-        const today = new Date().toDateString();
-        
-
         const vals = {};
         fields.forEach(f => { vals[f.key] = m[f.key] || ''; });
         setForm(vals);
@@ -111,8 +107,6 @@ const MeasurementForm = () => {
               </div>
             </div>
 
-
-
             <div className="card" style={{ marginBottom: 24 }}>
               <h3 style={{ fontWeight: 700, marginBottom: 20 }}>📸 Progress Photos</h3>
               <div className="grid grid-3">
@@ -139,7 +133,7 @@ const MeasurementForm = () => {
         ) : (
           <div className="fade-in">
             {history.length === 0 ? (
-              <div className="empty-state card"><h3>No measurements yet</h3><p>Start logging your measurements above.</p></div>
+              <div className="empty-state card"><h3>No measurements yet</h3><p style={{ color: 'var(--text-dim)' }}>Start logging your measurements above.</p></div>
             ) : (
               <div className="table-container">
                 <table>
@@ -150,7 +144,7 @@ const MeasurementForm = () => {
                         <td>{new Date(m.date).toLocaleDateString()}</td>
                         <td>{m.stepsCount || 0}</td>
                         <td>{m.weight} kg</td><td>{m.chest} cm</td>
-                        <td>{m.belly} cm</td><td>{m.hips} cm</td>
+                        <td>{m.belly} cm</td>
                         <td>{[m.images?.left, m.images?.right, m.images?.center, m.stepsImage].filter(Boolean).length} photos</td>
                       </tr>
                     ))}

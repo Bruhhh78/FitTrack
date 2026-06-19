@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FiUser, FiMail, FiLock, FiPhone, FiCheckCircle } from 'react-icons/fi';
-import { FcGoogle } from 'react-icons/fc';
 import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 
@@ -38,13 +37,13 @@ const Register = () => {
   };
 
   return (
-    <div className="auth-page" style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
+    <div className="auth-page" style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
       justifyContent: 'center',
       padding: '100px 20px 40px',
-      background: 'radial-gradient(circle at top right, rgba(245, 158, 11, 0.05), transparent), radial-gradient(circle at bottom left, rgba(249, 115, 22, 0.05), transparent)'
+      background: 'radial-gradient(circle at top right, rgba(139, 92, 246, 0.06), transparent), radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.04), transparent)'
     }}>
       <div className="card animate-fade" style={{ width: '100%', maxWidth: '480px', padding: '40px' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>

@@ -26,6 +26,7 @@ app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
 app.use('/api/measurements', require('./routes/measurementRoutes'));
 app.use('/api/meals', require('./routes/mealRoutes'));
 app.use('/api/streaks', require('./routes/streakRoutes'));
+app.use('/api/payments', require('./routes/paymentRoutes'));
 
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));

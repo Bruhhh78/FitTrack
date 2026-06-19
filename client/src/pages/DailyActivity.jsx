@@ -42,7 +42,6 @@ const DailyActivity = () => {
       formData.append('stepsCount', stepsCount);
       if (stepsImage) formData.append('stepsImage', stepsImage);
 
-      // We use the same measurements endpoint but it handles updates if already logged today
       await api.post('/measurements', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       toast.success('Daily activity saved!');
       setIsLogged(true);
@@ -57,7 +56,7 @@ const DailyActivity = () => {
       <div className="container" style={{ paddingTop: 32, paddingBottom: 60, maxWidth: 600 }}>
         <div className="fade-in">
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{ width: 64, height: 64, background: 'rgba(245, 158, 11, 0.1)', color: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: '2rem' }}>
+            <div style={{ width: 64, height: 64, background: 'var(--primary-subtle)', color: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: '2rem' }}>
               <FiActivity />
             </div>
             <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 8 }}>Daily Movement</h1>
@@ -67,10 +66,10 @@ const DailyActivity = () => {
           <form onSubmit={handleSubmit} className="card glass-premium" style={{ padding: 32 }}>
             <div className="form-group" style={{ marginBottom: 24 }}>
               <label className="form-label">Total Steps Count</label>
-              <input 
-                className="form-input" 
-                type="number" 
-                placeholder="e.g. 10000" 
+              <input
+                className="form-input"
+                type="number"
+                placeholder="e.g. 10000"
                 value={stepsCount}
                 onChange={e => setStepsCount(e.target.value)}
                 style={{ fontSize: '1.2rem', padding: '16px' }}
@@ -97,13 +96,13 @@ const DailyActivity = () => {
               </label>
             </div>
 
-            <button className={`btn btn-primary btn-lg ${isLogged ? 'btn-success' : ''}`} style={{ width: '100%', padding: '18px', fontSize: '1.1rem' }} disabled={loading}>
+            <button className={`btn ${isLogged ? 'btn-secondary' : 'btn-primary'} btn-lg`} style={{ width: '100%', padding: '18px', fontSize: '1.1rem' }} disabled={loading}>
               {loading ? 'Saving...' : isLogged ? <><FiCheckCircle /> Updated Today</> : <><FiSave /> Log Activity</>}
             </button>
           </form>
 
-          <button 
-            className="btn btn-ghost" 
+          <button
+            className="btn btn-ghost"
             style={{ width: '100%', marginTop: 16 }}
             onClick={() => navigate(`/dashboard/${batchId}`)}
           >

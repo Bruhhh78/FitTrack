@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
+import ScrollToTop from './components/ScrollToTop';
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -21,12 +22,15 @@ import Messenger from './pages/Messenger';
 import Notifications from './pages/Notifications';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminBatchView from './pages/admin/AdminBatchView';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsConditions from './pages/TermsConditions';
 
 function App() {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <Toaster position="top-right" toastOptions={{ className: 'toast-custom', duration: 3000 }} />
       <Navbar />
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -35,6 +39,8 @@ function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/batches" element={<BatchList />} />
         <Route path="/batches/:id" element={<ProtectedRoute><BatchDetail /></ProtectedRoute>} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-conditions" element={<TermsConditions />} />
 
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/dashboard/:batchId" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

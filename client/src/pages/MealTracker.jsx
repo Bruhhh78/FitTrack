@@ -40,8 +40,7 @@ const MealTracker = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!editMeal) return;
-    
-    // Validation
+
     if (!form.description) return toast.error('Please describe what you ate');
     if (!form.calories) return toast.error('Please enter approximate calories');
     if (!form.time) return toast.error('Please enter meal time');
@@ -51,11 +50,11 @@ const MealTracker = () => {
     try {
       let imageUrl = '';
       if (mealImage) imageUrl = await handleImageUpload(mealImage);
-      else imageUrl = mealPreview; // Use existing if not changed
+      else imageUrl = mealPreview;
       const existingMeal = todayLog?.meals?.find(m => m.type === editMeal);
       await api.post('/meals', {
-        batchId, 
-        date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD format
+        batchId,
+        date: new Date().toLocaleDateString('en-CA'),
         meals: [{ type: editMeal, description: form.description, calories: Number(form.calories) || 0, time: form.time, image: imageUrl || existingMeal?.image || '' }],
       });
       toast.success(`${editMeal} logged!`);
@@ -91,7 +90,6 @@ const MealTracker = () => {
 
         {tab === 'today' ? (
           <div className="fade-in">
-            {/* Meal cards */}
             {mealTypes.map(mt => {
               const logged = todayLog?.meals?.find(m => m.type === mt.type);
               return (
@@ -113,12 +111,11 @@ const MealTracker = () => {
               );
             })}
 
-            {/* Meal form modal */}
             {editMeal && (
               <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setEditMeal(null)}>
                 <div className="modal">
                   <div className="modal-header">
-                    <h3 className="modal-title">Log {editMeal}</h3>
+                    <h3>Log {editMeal}</h3>
                     <button className="modal-close" onClick={() => setEditMeal(null)}>×</button>
                   </div>
                   <form onSubmit={handleSubmit}>

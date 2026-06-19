@@ -11,10 +11,10 @@ const StreakDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get(`/streaks/${batchId}`).then(r => { 
-      setStreak(r.data.streak); 
+    api.get(`/streaks/${batchId}`).then(r => {
+      setStreak(r.data.streak);
       setEnrollment(r.data.enrollment);
-      setLoading(false); 
+      setLoading(false);
     }).catch(() => setLoading(false));
   }, [batchId]);
 
@@ -31,10 +31,9 @@ const StreakDashboard = () => {
   const today = new Date().toDateString();
   const isLoggedToday = streak?.completedDays?.some(d => new Date(d.date).toDateString() === today);
 
-  // Generate calendar based on course duration
   const startDate = new Date(enrollment?.enrolledAt || streak?.createdAt || new Date());
   startDate.setHours(0, 0, 0, 0);
-  
+
   const batch = streak?.batchId;
   const totalDays = batch?.durationType === 'weeks' ? batch.duration * 7 : batch?.durationType === 'months' ? batch.duration * 30 : batch?.duration || 30;
 
@@ -44,15 +43,15 @@ const StreakDashboard = () => {
   for (let i = 0; i < totalDays; i++) {
     const d = new Date(startDate);
     d.setDate(startDate.getDate() + i);
-    
+
     const completed = streak?.completedDays?.some(cd => new Date(cd.date).toDateString() === d.toDateString());
     const isToday = d.toDateString() === now.toDateString();
     const isPast = d < now;
 
-    let status = 'upcoming'; // Default grey
-    if (completed) status = 'completed'; // Green
-    else if (isToday) status = 'current'; // Yellow
-    else if (isPast) status = 'missed'; // Red
+    let status = 'upcoming';
+    if (completed) status = 'completed';
+    else if (isToday) status = 'current';
+    else if (isPast) status = 'missed';
 
     calendarDays.push({ date: d, status, dayNum: i + 1 });
   }
@@ -63,11 +62,13 @@ const StreakDashboard = () => {
         <h1 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: 24 }}>🔥 Streak Dashboard</h1>
 
         {/* Streak summary */}
-        <div className="card" style={{ textAlign: 'center', padding: 40, marginBottom: 24 }}>
-          <div className="streak-flame">🔥</div>
-          <div className="streak-count">{streak?.currentStreak || 0}</div>
-          <div className="streak-label">Day Streak</div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 40, marginTop: 24 }}>
+        <div className="card" style={{ textAlign: 'center', padding: 40, marginBottom: 24, background: 'var(--gradient-hero-subtle)', border: '1px solid var(--primary-glow)' }}>
+          <div style={{ fontSize: '3rem', marginBottom: 8 }}>🔥</div>
+          <div style={{ fontSize: '3.5rem', fontWeight: 900, fontFamily: 'Outfit, sans-serif', lineHeight: 1 }}>
+            <span className="text-gradient">{streak?.currentStreak || 0}</span>
+          </div>
+          <div style={{ color: 'var(--text-dim)', fontSize: '1rem', marginTop: 8, fontWeight: 600 }}>Day Streak</div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 40, marginTop: 28, flexWrap: 'wrap' }}>
             <div><div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent)' }}>{streak?.longestStreak || 0}</div><div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Longest Streak</div></div>
             <div><div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent)' }}>{streak?.totalPoints || 0}</div><div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Total Points</div></div>
             <div><div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent)' }}>{streak?.completedDays?.length || 0}</div><div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Days Done</div></div>
@@ -90,20 +91,20 @@ const StreakDashboard = () => {
 
         {/* Course Progress Calendar */}
         <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
             <h3 style={{ fontWeight: 700 }}>Course Progress</h3>
-            <div style={{ display: 'flex', gap: 12, fontSize: '0.7rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--success)' }}></div> Done</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: '#fbbf24' }}></div> Today</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: '#ef4444' }}></div> Missed</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--border)' }}></div> Upcoming</div>
+            <div style={{ display: 'flex', gap: 12, fontSize: '0.7rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 10, height: 10, borderRadius: 3, background: 'var(--primary)' }}></div> Done</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 10, height: 10, borderRadius: 3, background: 'var(--accent)' }}></div> Today</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 10, height: 10, borderRadius: 3, background: 'var(--danger)' }}></div> Missed</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 10, height: 10, borderRadius: 3, background: 'var(--bg-tertiary)' }}></div> Upcoming</div>
             </div>
           </div>
-          
+
           <div className="streak-calendar" style={{ gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
             {calendarDays.map((d, i) => (
-              <div 
-                key={i} 
+              <div
+                key={i}
                 className="streak-day"
                 style={{
                   width: '100%',
@@ -115,11 +116,14 @@ const StreakDashboard = () => {
                   fontSize: '0.8rem',
                   fontWeight: 600,
                   cursor: 'default',
-                  background: d.status === 'completed' ? 'var(--success)' : 
-                              d.status === 'current' ? '#fbbf24' : 
-                              d.status === 'missed' ? '#ef4444' : 'var(--border)',
+                  background: d.status === 'completed' ? 'var(--primary)' :
+                              d.status === 'current' ? 'var(--accent)' :
+                              d.status === 'missed' ? 'var(--danger)' : 'var(--bg-tertiary)',
                   color: d.status === 'upcoming' ? 'var(--text-muted)' : '#fff',
-                  border: d.status === 'current' ? '2px solid #b45309' : 'none'
+                  border: d.status === 'current' ? '2px solid var(--accent-hover)' : 'none',
+                  boxShadow: d.status === 'completed' ? '0 0 8px var(--primary-glow)' :
+                             d.status === 'current' ? '0 0 8px var(--accent-glow)' : 'none',
+                  transition: 'var(--transition-fast)'
                 }}
                 title={d.date.toLocaleDateString()}
               >

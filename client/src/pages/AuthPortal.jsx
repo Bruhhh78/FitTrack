@@ -8,7 +8,6 @@ import { FiArrowRight, FiUserPlus, FiLogIn, FiCheckCircle, FiShield } from 'reac
 const AuthPortal = () => {
   const navigate = useNavigate();
   const { googleLogin } = useAuth();
-  const [activeTab, setActiveTab] = useState('choice'); // 'choice', 'login', 'signup'
 
   const handleGoogleSuccess = async (response) => {
     try {
@@ -21,54 +20,55 @@ const AuthPortal = () => {
   };
 
   return (
-    <div className="auth-portal-wrapper" style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      background: '#000',
+    <div className="auth-portal-wrapper" style={{
+      minHeight: '100vh',
+      display: 'flex',
+      background: 'var(--bg-deep)',
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* Background Image with Overlay */}
-      <div style={{ 
-        position: 'absolute', 
-        top: 0, 
-        left: 0, 
-        right: 0, 
-        bottom: 0,
-        backgroundImage: `url('/auth_portal_bg_1777805272440.png')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        opacity: 0.4,
+      {/* Ambient glows */}
+      <div style={{
+        position: 'absolute',
+        top: '-20%',
+        right: '-10%',
+        width: 600,
+        height: 600,
+        background: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%)',
+        borderRadius: '50%',
+        pointerEvents: 'none',
         zIndex: 1
       }} />
-      <div style={{ 
-        position: 'absolute', 
-        top: 0, 
-        left: 0, 
-        right: 0, 
-        bottom: 0,
-        background: 'radial-gradient(circle at center, transparent 0%, #000 80%)',
-        zIndex: 2
+      <div style={{
+        position: 'absolute',
+        bottom: '-15%',
+        left: '-10%',
+        width: 500,
+        height: 500,
+        background: 'radial-gradient(circle, rgba(6, 182, 212, 0.08) 0%, transparent 70%)',
+        borderRadius: '50%',
+        pointerEvents: 'none',
+        zIndex: 1
       }} />
 
-      <div className="container" style={{ 
-        position: 'relative', 
-        zIndex: 10, 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
+      <div className="container" style={{
+        position: 'relative',
+        zIndex: 10,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
         justifyContent: 'center',
         padding: '120px 20px 80px',
         maxWidth: 1200,
         margin: '0 auto'
       }}>
-        
+
         <div className="fade-in" style={{ textAlign: 'center', marginBottom: 60 }}>
-          <div style={{ 
-            display: 'inline-flex', 
-            padding: '8px 16px', 
-            background: 'rgba(245, 158, 11, 0.1)', 
-            border: '1px solid rgba(245, 158, 11, 0.2)', 
+          <div style={{
+            display: 'inline-flex',
+            padding: '8px 16px',
+            background: 'var(--primary-subtle)',
+            border: '1px solid var(--primary-glow)',
             borderRadius: 100,
             color: 'var(--primary)',
             fontSize: '0.85rem',
@@ -89,15 +89,15 @@ const AuthPortal = () => {
 
         <div className="grid grid-2" style={{ width: '100%', maxWidth: 900, gap: 24 }}>
           {/* Sign In Card */}
-          <div className="card glass-premium portal-card animate-slide-up" style={{ padding: 48, textAlign: 'center', border: '1px solid var(--glass-border)' }}>
-            <div className="portal-icon-box" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
+          <div className="card portal-card animate-slide-up" style={{ padding: 48, textAlign: 'center', border: '1px solid var(--glass-border)' }}>
+            <div className="portal-icon-box" style={{ background: 'var(--info-glow)', color: 'var(--info)' }}>
               <FiLogIn size={32} />
             </div>
             <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: 12 }}>Welcome Back</h2>
             <p style={{ color: 'var(--text-dim)', marginBottom: 32, fontSize: '0.95rem' }}>
               Already a member? Sign in to track your streak and log your daily progress.
             </p>
-            
+
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
@@ -110,9 +110,9 @@ const AuthPortal = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-               <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
-               <span style={{ margin: '0 12px' }}>OR</span>
-               <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
+              <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
+              <span style={{ margin: '0 12px' }}>OR</span>
+              <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
             </div>
 
             <Link to="/login" className="btn btn-outline btn-lg" style={{ width: '100%', padding: '16px' }}>
@@ -121,8 +121,8 @@ const AuthPortal = () => {
           </div>
 
           {/* Sign Up Card */}
-          <div className="card glass-premium portal-card animate-slide-up" style={{ padding: 48, textAlign: 'center', border: '1px solid var(--primary-glow)', background: 'rgba(245, 158, 11, 0.05)' }}>
-            <div className="portal-icon-box" style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--primary)' }}>
+          <div className="card portal-card animate-slide-up" style={{ padding: 48, textAlign: 'center', border: '1px solid var(--primary-glow)', background: 'var(--gradient-hero-subtle)' }}>
+            <div className="portal-icon-box" style={{ background: 'var(--primary-subtle)', color: 'var(--primary)' }}>
               <FiUserPlus size={32} />
             </div>
             <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: 12 }}>New Journey</h2>
@@ -142,9 +142,9 @@ const AuthPortal = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-               <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
-               <span style={{ margin: '0 12px' }}>OR</span>
-               <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
+              <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
+              <span style={{ margin: '0 12px' }}>OR</span>
+              <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
             </div>
 
             <Link to="/register" className="btn btn-primary btn-lg" style={{ width: '100%', padding: '16px' }}>
@@ -153,15 +153,15 @@ const AuthPortal = () => {
           </div>
         </div>
 
-        <div style={{ marginTop: 60, display: 'flex', gap: 40, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+        <div style={{ marginTop: 60, display: 'flex', gap: 40, color: 'var(--text-muted)', fontSize: '0.9rem', flexWrap: 'wrap', justifyContent: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-             <FiCheckCircle style={{ color: 'var(--success)' }} /> Secure SSL
+            <FiCheckCircle style={{ color: 'var(--success)' }} /> Secure SSL
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-             <FiCheckCircle style={{ color: 'var(--success)' }} /> Google Verified
+            <FiCheckCircle style={{ color: 'var(--success)' }} /> Google Verified
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-             <FiCheckCircle style={{ color: 'var(--success)' }} /> Privacy Protected
+            <FiCheckCircle style={{ color: 'var(--success)' }} /> Privacy Protected
           </div>
         </div>
 
@@ -182,15 +182,7 @@ const AuthPortal = () => {
         }
         .portal-card:hover {
           transform: translateY(-10px);
-          background: rgba(255, 255, 255, 0.03);
-          box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        }
-        .animate-slide-up {
-          animation: slideUp 0.8s ease forwards;
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(40px); }
-          to { opacity: 1; transform: translateY(0); }
+          box-shadow: var(--shadow-lg), 0 0 40px var(--primary-glow);
         }
       `}</style>
     </div>
