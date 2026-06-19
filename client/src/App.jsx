@@ -16,7 +16,6 @@ import MealTracker from './pages/MealTracker';
 import StreakDashboard from './pages/StreakDashboard';
 import DailyActivity from './pages/DailyActivity';
 import AuthPortal from './pages/AuthPortal';
-
 import Learn from './pages/Learn';
 import Messenger from './pages/Messenger';
 import Notifications from './pages/Notifications';
@@ -41,7 +40,6 @@ function App() {
         <Route path="/batches/:id" element={<ProtectedRoute><BatchDetail /></ProtectedRoute>} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-conditions" element={<TermsConditions />} />
-
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/dashboard/:batchId" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/learn/:batchId" element={<ProtectedRoute><Learn /></ProtectedRoute>} />

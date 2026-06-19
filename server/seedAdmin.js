@@ -32,6 +32,7 @@ const seedAdmin = async () => {
       console.log(`✅ Admin account created!`);
     }
 
+    
     console.log(`\n   Email:    ${ADMIN_EMAIL}`);
     console.log(`   Password: ${ADMIN_PASSWORD}`);
     console.log(`\n⚠️  Change the password after first login!`);
