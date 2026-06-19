@@ -17,3 +17,7 @@ FitTrack is a comprehensive weight loss management application designed to help 
 *   **Active Monitor**: Monitor all enrolled users in real-time, view their uploaded pictures and measurements, and track compliance.
 *   **Inactivity Alerts**: Receive email alerts when users fail to log their daily measurements.
 *   **Direct Communication**: Connect and coach students directly.
+
+---
+
+Developed with ❤️ by **Anmol Srivastava**
